@@ -60,11 +60,13 @@ LIMIT 100'
 qd <- SPARQL(endpoint,query)
 
 metadata = qd$results
-names(metadata)[names(metadata)=="DOI"] <- "id"
+#names(metadata)[names(metadata)=="DOI"] <- "id"
 names(metadata)[names(metadata)=="itemLabel"] <- "title"
 names(metadata)[names(metadata)=="PMCID"] <- "pmcid"
 names(metadata)[names(metadata)=="publication_date"] <- "year"
+names(metadata)[names(metadata)=="published_in"] <- "journal_id"
 names(metadata)[names(metadata)=="published_inLabel"] <- "published_in"
+metadata$id = seq.int(nrow(metadata))
 
 text = data.frame(matrix(nrow=length(metadata$id)))
 text$id = metadata$id
@@ -77,4 +79,4 @@ text$content = paste(metadata$title,
 
 output_json = vis_layout(text, metadata, max_clusters=MAX_CLUSTERS, add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
 
-write(output_json, "../../../examples/zika/data/output_zika.json")
+write(output_json, "../../../../examples/zika/data/output_zika.json")
