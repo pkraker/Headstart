@@ -1,6 +1,8 @@
 var data_config = {
     tag: "visualization",
     mode: "local_files",
+	
+	service: "pubmed",
 
     title: "Overview of the Zika Corpus",
     input_format: "json",
@@ -22,10 +24,11 @@ var data_config = {
 	create_title_from_context: false,
 	
 	preview_type: "pdf",
-	service: "pubmed",
 	
 	language: "eng_pubmed",
 	doi_outlink: true,
+	
+	server_url: window.location.href.replace(/[^/]*$/, '') + "../../server/",
     
 
     files: [{

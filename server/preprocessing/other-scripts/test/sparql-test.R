@@ -63,13 +63,15 @@ LIMIT 100'
 qd <- SPARQL(endpoint,query)
 
 metadata = qd$results
-#names(metadata)[names(metadata)=="DOI"] <- "id"
+names(metadata)[names(metadata)=="item"] <- "id"
+names(metadata)[names(metadata)=="DOI"] <- "doi"
 names(metadata)[names(metadata)=="itemLabel"] <- "title"
 names(metadata)[names(metadata)=="PMCID"] <- "pmcid"
 names(metadata)[names(metadata)=="publication_date"] <- "year"
 names(metadata)[names(metadata)=="published_in"] <- "journal_id"
 names(metadata)[names(metadata)=="published_inLabel"] <- "published_in"
-metadata$id = seq.int(nrow(metadata))
+metadata$relevance = seq.int(nrow(metadata))
+metadata$id = chartr('<:/>', '____', metadata$id)
 
 metadata$year = as.POSIXct(as.numeric(metadata$year), origin="1970-01-01", tz="GMT", format="%Y-%m-%d")
 
