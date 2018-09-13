@@ -72,6 +72,7 @@ names(metadata)[names(metadata)=="published_in"] <- "journal_id"
 names(metadata)[names(metadata)=="published_inLabel"] <- "published_in"
 metadata$relevance = seq.int(nrow(metadata))
 metadata$id = chartr('<:/>', '____', metadata$id)
+metadata$subject_orig = metadata$subject
 
 metadata$year = as.POSIXct(as.numeric(metadata$year), origin="1970-01-01", tz="GMT", format="%Y-%m-%d")
 
