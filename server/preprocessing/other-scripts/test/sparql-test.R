@@ -38,10 +38,15 @@ SELECT DISTINCT ?item ?_PubMed_ID ?PMCID ?publication_date ?DOI ?itemLabel
 (GROUP_CONCAT(DISTINCT ?main_subjectLabel; SEPARATOR = "; ") AS ?subject) WHERE {
 {
   SELECT * WHERE {
-  ?item wdt:P31 wd:Q13442814.
-  ?item rdfs:label ?itemLabel.
-  FILTER(CONTAINS(LCASE(?itemLabel), "zika"))
-  FILTER((LANG(?itemLabel)) = "en")
+    #ZIKA
+    #?item wdt:P31 wd:Q13442814.
+    #FILTER(CONTAINS(LCASE(?itemLabel), "zika"))
+    
+    #INVASIVE SPECIES
+    ?item wdt:P921 / (wdt:P361+ | wdt:P1269+ | (wdt:P31* / wdt:P279*) ) wd:Q183368 .
+
+    ?item rdfs:label ?itemLabel.
+    FILTER((LANG(?itemLabel)) = "en")
   }
   LIMIT 1000
 }
@@ -87,4 +92,5 @@ text$content = paste(metadata$title,
 
 output_json = vis_layout(text, metadata, max_clusters=MAX_CLUSTERS, add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
 
-write(output_json, "../../../../examples/zika/data/output_zika.json")
+#write(output_json, "../../../../examples/zika/data/output_zika.json")
+write(output_json, "../../../../examples/zika/data/output_invasive_species.json")

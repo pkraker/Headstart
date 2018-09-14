@@ -4,7 +4,7 @@ var data_config = {
 	
 	service: "pubmed",
 
-    title: "Overview of the Zika Corpus",
+    title: "Overview of research articles in Wikidata",
     input_format: "json",
     base_unit: "readers",
     use_area_uri: true,
@@ -13,7 +13,7 @@ var data_config = {
     url_prefix: "http://mendeley.com/catalog/",
     
     show_timeline: false,
-    show_dropdown: false,
+    show_dropdown: true,
     show_intro: false,
     show_list: true,
     is_force_papers: true,
@@ -32,7 +32,11 @@ var data_config = {
     
 
     files: [{
-        title: "edu1",
+        title: "zika",
         file: "./data/output_zika.json"
+    },
+	{
+        title: "invasive species",
+        file: "./data/output_invasive_species.json"
     }]
 };
