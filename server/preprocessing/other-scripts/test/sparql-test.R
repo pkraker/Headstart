@@ -39,11 +39,11 @@ SELECT DISTINCT ?item ?_PubMed_ID ?PMCID ?publication_date ?DOI ?itemLabel
 {
   SELECT * WHERE {
     #ZIKA
-    #?item wdt:P31 wd:Q13442814.
-    #FILTER(CONTAINS(LCASE(?itemLabel), "zika"))
+    ?item wdt:P31 wd:Q13442814.
+    FILTER(CONTAINS(LCASE(?itemLabel), "zika"))
     
     #INVASIVE SPECIES
-    ?item wdt:P921 / (wdt:P361+ | wdt:P1269+ | (wdt:P31* / wdt:P279*) ) wd:Q183368 .
+    #?item wdt:P921 / (wdt:P361+ | wdt:P1269+ | (wdt:P31* / wdt:P279*) ) wd:Q183368 .
 
     ?item rdfs:label ?itemLabel.
     FILTER((LANG(?itemLabel)) = "en")
@@ -74,7 +74,7 @@ names(metadata)[names(metadata)=="itemLabel"] <- "title"
 names(metadata)[names(metadata)=="PMCID"] <- "pmcid"
 names(metadata)[names(metadata)=="publication_date"] <- "year"
 names(metadata)[names(metadata)=="published_in"] <- "journal_id"
-names(metadata)[names(metadata)=="published_inLabel"] <- "published_in"
+names(metadata)[names(metadata)=="publication"] <- "published_in"
 metadata$relevance = seq.int(nrow(metadata))
 metadata$id = chartr('<:/>', '____', metadata$id)
 metadata$subject_orig = metadata$subject
@@ -92,5 +92,5 @@ text$content = paste(metadata$title,
 
 output_json = vis_layout(text, metadata, max_clusters=MAX_CLUSTERS, add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
 
-#write(output_json, "../../../../examples/zika/data/output_zika.json")
-write(output_json, "../../../../examples/zika/data/output_invasive_species.json")
+write(output_json, "../../../../examples/wikidata/data/output_zika.json")
+#write(output_json, "../../../../examples/wikidata/data/output_invasive_species.json")
