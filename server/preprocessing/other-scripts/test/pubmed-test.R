@@ -13,13 +13,20 @@ service <- "pubmed"
 params <- NULL
 params_file <- "params_pubmed.json"
 
+source('../utils.R')
+DEBUG = FALSE
+
+if (DEBUG==TRUE){
+  setup_logging('DEBUG')
+} else {
+  setup_logging('INFO')
+}
+
 source("../vis_layout.R")
 source('../pubmed.R')
-source('../utils.R')
-
-debug = FALSE
 
 MAX_CLUSTERS = 15
+LANGUAGE = "english"
 ADDITIONAL_STOP_WORDS = "english"
 
 if(!is.null(params_file)) {
@@ -34,6 +41,8 @@ input_data = get_papers(query, params)
 #time.taken <- end.time - start.time
 #time.taken
 
-output_json = vis_layout(input_data$text, input_data$metadata, max_clusters=MAX_CLUSTERS, add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
+output_json = vis_layout(input_data$text, input_data$metadata, max_clusters=MAX_CLUSTERS,
+                         lang=LANGUAGE,
+                         add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
 
 print(output_json)
