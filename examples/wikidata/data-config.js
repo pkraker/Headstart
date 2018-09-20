@@ -28,6 +28,10 @@ var data_config = {
 	language: "eng_pubmed",
 	doi_outlink: true,
 	
+	filter_menu_dropdown: true,
+    sort_menu_dropdown: true,
+    filter_options: ["all", "open_access"],
+	
 	server_url: window.location.href.replace(/[^/]*$/, '') + "../../server/",
     
 

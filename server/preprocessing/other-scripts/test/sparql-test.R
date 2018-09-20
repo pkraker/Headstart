@@ -8,18 +8,13 @@ wd <- dirname(rstudioapi::getActiveDocumentContext()$path)
 
 setwd(wd) #Don't forget to set your working directory
 
-#query <- "russian" #args[2]
-#service <- "pubmed"
-#params <- NULL
-#params_file <- "params_pubmed.json"
-
 source("../vis_layout.R")
-#source('../pubmed.R')
 source('../utils.R')
 
 debug = FALSE
 
 MAX_CLUSTERS = 15
+LANGUAGE = "english"
 ADDITIONAL_STOP_WORDS = "english"
 
 #if(!is.null(params_file)) {
@@ -90,7 +85,8 @@ text$content = paste(metadata$title,
                      metadata$published_in, metadata$authors,
                      sep=" ")
 
-output_json = vis_layout(text, metadata, max_clusters=MAX_CLUSTERS, add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
+output_json = vis_layout(text, metadata, max_clusters=MAX_CLUSTERS, lang=LANGUAGE, 
+                         add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
 
 write(output_json, "../../../../examples/wikidata/data/output_zika.json")
 #write(output_json, "../../../../examples/wikidata/data/output_invasive_species.json")
