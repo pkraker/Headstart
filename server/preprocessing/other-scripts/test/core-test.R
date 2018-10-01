@@ -33,10 +33,10 @@ if(!is.null(params_file)) {
   params <- fromJSON(params_file)
 }
 
-input_data = get_papers(query, params, limit=100)
+input_data = get_papers(query, params, limit=120)
 
 output_json = vis_layout(input_data$text, input_data$metadata, max_clusters=MAX_CLUSTERS,
                          lang=LANGUAGE,
-                         add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE)
+                         add_stop_words=ADDITIONAL_STOP_WORDS, testing=TRUE, list_size=100)
 
 print(output_json)

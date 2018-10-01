@@ -51,6 +51,8 @@ switch(service,
        },
        core={
         source('../other-scripts/core.R')
+        limit = 120
+        list_size = 100
        },
       {
         source("../other-scripts/rplos_fast.R")
