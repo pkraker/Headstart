@@ -10,7 +10,6 @@ var data_config = {
     use_area_uri: true,
     is_force_areas: true,
 	area_force_alpha: 0.015,
-    url_prefix: "http://mendeley.com/catalog/",
     
     show_timeline: false,
     show_dropdown: true,
