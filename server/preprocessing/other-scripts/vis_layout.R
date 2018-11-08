@@ -40,12 +40,14 @@ vis_layout <- function(text, metadata,
      source('cluster.R')
      source('summarize.R')
      source('postprocess.R')
+     source('ifs.R')
    } else {
      source('../preprocess.R')
      source('../features.R')
      source('../cluster.R')
      source('../summarize.R')
      source('../postprocess.R')
+     source('../ifs.R')
    }
   }, error = function(err) print(err)
   )
@@ -55,11 +57,14 @@ vis_layout <- function(text, metadata,
   metadata <- filtered$metadata
   text <- filtered$text
   metadata["lang_detected"] <- detect_language(text$content)
+  metadata["noun_chunks"] <- unlist(lapply(synchronise(get_nouns_async(metadata$id, 'linkedcat')),
+                                    paste, collapse=";"))
+  text["content"] <- metadata$noun_chunks
   stops <- get_stopwords(lang, testing)
   corpus <- create_corpus(metadata, text, lang)
 
   vlog$debug("get features")
-  tdm_matrix <- create_tdm_matrix(corpus$stemmed)
+  tdm_matrix <- create_tdm_matrix(corpus$stemmed, 0.8)
   distance_matrix <- get_distance_matrix(tdm_matrix)
   lang_detected <- get_OHE_feature(metadata, "lang_detected")
   vlog$info(paste("Languages:",

@@ -7,7 +7,7 @@ options(warn=1)
 wd <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(wd) #Don't forget to set your working directory
 
-query <- "Sitzung" #args[2]
+query <- "wien" #args[2]
 service <- "linkedcat"
 params <- NULL
 params_file <- "params_linkedcat.json"
@@ -38,7 +38,7 @@ if(!is.null(params_file)) {
 #start.time <- Sys.time()
 
 tryCatch({
-  input_data = get_papers(query, params)
+  input_data = get_papers(query, params, 3)
 }, error=function(err){
   tslog$error(gsub("\n", " ", paste("Query failed", service, query, paste(params, collapse=" "), err, sep="||")))
 })
@@ -52,6 +52,7 @@ tryCatch({
                            max_clusters = MAX_CLUSTERS,
                            lang = LANGUAGE,
                            add_stop_words = ADDITIONAL_STOP_WORDS,
+                           taxonomy_separator = ";",
                            testing=TRUE, list_size=-1)
   
 }, error=function(err){
