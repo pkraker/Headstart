@@ -195,3 +195,11 @@ get_type_counts <- function(corpus) {
   type_counts = apply(TermDocumentMatrix(corpus, control=list(tokenize=TypeCountTokenizer, tolower = FALSE)), 1, sum)
   return(type_counts)
 }
+
+
+get_textrank_keywords <- function(text) {
+  t <- gsub("-", ";", text)
+  w <- unlist(strsplit(t, ";"))
+  rw <- textrank_keywords(w)
+  return(head(subset(rw$keywords, ngram > 1), 3))
+}
