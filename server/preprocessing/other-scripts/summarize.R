@@ -200,6 +200,19 @@ get_type_counts <- function(corpus) {
 get_textrank_keywords <- function(text) {
   t <- gsub("-", ";", text)
   w <- unlist(strsplit(t, ";"))
-  rw <- textrank_keywords(w)
-  return(head(subset(rw$keywords, ngram > 1), 3))
+  w <- w[lapply(w, nchar) > 0]
+  trk <- textrank_keywords(w)
+  return(trk)
+}
+
+summarize_clusters <- function(output) {
+  output$alternative_summary <- ""
+  for (k in unique(output$area_uri)) {
+    ss <- subset(output, area_uri == k)
+    trk <- get_textrank_keywords(paste(ss$noun_chunks, collapse=";"))
+    summary <- paste(head(subset(trk$keywords, ngram > 1), 3)$keyword, collapse=", ")
+    matches = which(output$area_uri == k)
+    output$alternative_summary[matches] <- summary
+  }
+  return(output)
 }
