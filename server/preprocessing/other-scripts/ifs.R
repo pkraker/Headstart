@@ -29,7 +29,7 @@ create_nouns <- function(text, index) {
 post_nouns <- function(id, nc, index) {
   url <- paste("http://localhost:5001/noun_chunks", index, id, sep="/")
   body <- list(noun_chunks = toJSON(nc))
-  res <- POST(url, body=body, encode='json')
+  res <- POST(url, body=body, encode='json', timeout(90))
 }
 
 get_or_create_nouns_async <- function(docs, index) {
