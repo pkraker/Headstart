@@ -14,6 +14,8 @@ library(stringdist)
 library(plyr)
 library(onehot)
 library(textrank)
+library(httr)
+library(async)
 registerDoParallel(3)
 
 
@@ -58,7 +60,7 @@ vis_layout <- function(text, metadata,
   metadata <- filtered$metadata
   text <- filtered$text
   metadata["lang_detected"] <- detect_language(text$content)
-  metadata["noun_chunks"] <- unlist(lapply(synchronise(get_nouns_async(metadata$id, 'linkedcat')),
+  metadata["noun_chunks"] <- unlist(lapply(get_or_create_nouns_async(metadata, 'base'),
                                     paste, collapse=";"))
   text["content"] <- metadata$noun_chunks
   stops <- get_stopwords(lang, testing)

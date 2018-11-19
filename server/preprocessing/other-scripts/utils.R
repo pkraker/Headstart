@@ -1,6 +1,19 @@
 library(stringdist)
 library(logging)
 
+SplitTokenizer <- function(x) {
+  tokens = unlist(lapply(strsplit(words(x), split=";"), paste), use.names = FALSE)
+  return(tokens)
+}
+
+TypeCountTokenizer <- function(x) {
+  tokens = unlist(lapply(strsplit(words(x), split=";"), paste), use.names = FALSE)
+  tokens = unlist(lapply(tokens, gsub, pattern='[[:punct:]]', replacement=""))
+  return(tokens)
+}
+
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+
 levenshtein_ratio <- function(a, b) {
   lv_dist = stringdist(a, b, method = "lv")
   lv_ratio = lv_dist/(max(stri_length(a), stri_length(b)))

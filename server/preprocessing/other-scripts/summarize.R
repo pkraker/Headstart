@@ -1,18 +1,5 @@
 vslog <- getLogger('vis.summarize')
 
-SplitTokenizer <- function(x) {
-  tokens = unlist(lapply(strsplit(words(x), split=";"), paste), use.names = FALSE)
-  return(tokens)
-}
-
-TypeCountTokenizer <- function(x) {
-  tokens = unlist(lapply(strsplit(words(x), split=";"), paste), use.names = FALSE)
-  tokens = unlist(lapply(tokens, gsub, pattern='[[:punct:]]', replacement=""))
-  return(tokens)
-}
-
-trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-
 
 prune_ngrams <- function(ngrams, stops){
   tokens = mapply(strsplit, ngrams, split=" |;")
