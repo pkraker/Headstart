@@ -2,6 +2,7 @@ library('httr')
 library('async')
 
 
+set_config(timeout(90))
 
 get_nouns_batch <- function(docs) {
   url <- "http://localhost:5002/batch_tag"
@@ -29,7 +30,7 @@ create_nouns <- function(text, index) {
 post_nouns <- function(id, nc, index) {
   url <- paste("http://localhost:5001/noun_chunks", index, id, sep="/")
   body <- list(noun_chunks = toJSON(nc))
-  res <- POST(url, body=body, encode='json', timeout(90))
+  res <- POST(url, body=body, encode='json')
 }
 
 get_or_create_nouns_async <- function(docs, index) {
