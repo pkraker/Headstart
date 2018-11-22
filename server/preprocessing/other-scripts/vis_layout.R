@@ -67,7 +67,7 @@ vis_layout <- function(text, metadata, service,
   corpus <- create_corpus(metadata, text, lang)
 
   vlog$debug("get features")
-  tdm_matrix <- create_tdm_matrix(corpus$stemmed, 0.8)
+  tdm_matrix <- create_tdm_matrix(corpus$stemmed)
   distance_matrix <- get_distance_matrix(tdm_matrix)
   lang_detected <- get_OHE_feature(metadata, "lang_detected")
   vlog$info(paste("Languages:",
