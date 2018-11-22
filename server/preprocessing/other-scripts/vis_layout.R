@@ -24,7 +24,7 @@ vlog <- getLogger('vis')
 # Expects the following metadata fields:
 # id, content, title, readers, published_in, year, authors, paper_abstract, subject
 
-vis_layout <- function(text, metadata,
+vis_layout <- function(text, metadata, service,
                        max_clusters=15, maxit=500,
                        mindim=2, maxdim=2,
                        lang=NULL, add_stop_words=NULL,
@@ -60,7 +60,7 @@ vis_layout <- function(text, metadata,
   metadata <- filtered$metadata
   text <- filtered$text
   metadata["lang_detected"] <- detect_language(text$content)
-  metadata["noun_chunks"] <- unlist(lapply(get_or_create_nouns_async(metadata, 'base'),
+  metadata["noun_chunks"] <- unlist(lapply(get_or_create_nouns_async(metadata, service),
                                     paste, collapse=";"))
   text["content"] <- metadata$noun_chunks
   stops <- get_stopwords(lang, testing)
