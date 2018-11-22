@@ -22,8 +22,8 @@ create_corpus <- function(metadata, text, lang=NULL) {
   corpus <- tm_map(corpus, content_transformer(function(x) iconv(enc2utf8(x), sub = "byte")))
   unlowered <- corpus
   #corpus <- tm_map(corpus, removePunctuation)
-  #corpus <- tm_map(corpus, content_transformer(tolower))
-  #corpus <- tm_map(corpus, remove_stop_words)
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, remove_stop_words)
   #corpus <- tm_map(corpus, stripWhitespace)
   unstemmed <- corpus
   stemmed <- tm_map(corpus, stemDocument)
@@ -33,7 +33,7 @@ create_corpus <- function(metadata, text, lang=NULL) {
 
 
 create_tdm_matrix <- function(corpus, sparsity=1) {
-  tdm <- TermDocumentMatrix(corpus, control= list(tokenize=SplitTokenizer))
+  tdm <- TermDocumentMatrix(corpus)
   if(sparsity < 1) {
     tdm <- removeSparseTerms(tdm, sparsity)
   }
