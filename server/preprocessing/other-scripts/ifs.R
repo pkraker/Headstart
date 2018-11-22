@@ -4,12 +4,13 @@ library('async')
 
 set_config(timeout(90))
 
-get_nouns_batch <- function(docs) {
+get_nouns_batch <- function(docs, lang) {
   url <- "http://localhost:5002/batch_tag"
-  body <- list(lang="de", docs=toJSON(docs))
+  body <- list(lang=lang, docs=toJSON(docs))
   res <- POST(url, body=body, encode='json')
   nc <- httr::content(res)$noun_chunks
   nc <- lapply(nc, unlist)
+  return(nc)
 }
 
 get_nouns <- function(id, index) {
@@ -37,7 +38,7 @@ get_or_create_nouns_async <- function(docs, index) {
   nc <- synchronise(async_map(docs$id, get_nouns, index=index))
   nc_null <- which(unlist(lapply(nc, is.null)))
   if (length(nc_null) > 0) {
-    nc_fill <- synchronise(async_map(docs[nc_null, 'paper_abstract'], create_nouns, index=index))
+    nc_fill <- get_nouns_batch(docs$paper_abstract, lang='en')
     mapply(post_nouns, docs[nc_null, 'id'], nc_fill, MoreArgs=list(index=index))
   }
   return(nc)
