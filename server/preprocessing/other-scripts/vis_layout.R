@@ -60,7 +60,9 @@ vis_layout <- function(text, metadata, service,
   metadata <- filtered$metadata
   text <- filtered$text
   metadata["lang_detected"] <- detect_language(text$content)
-  metadata["noun_chunks"] <- unlist(lapply(get_or_create_nouns_async(metadata, service),
+  metadata["noun_chunks"] <- unlist(lapply(get_or_create_nouns_async(metadata, service, lang),
+                                    paste, collapse=";"))
+  metadata["entities"] <- unlist(lapply(get_or_create_ne_async(metadata, service, lang),
                                     paste, collapse=";"))
   text["content"] <- metadata$noun_chunks
   stops <- get_stopwords(lang, testing)
