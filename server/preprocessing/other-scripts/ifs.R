@@ -38,7 +38,7 @@ get_or_create_nouns_async <- function(docs, index, lang) {
   nc <- synchronise(async_map(docs$id, get_nouns, index=index))
   nc_null <- which(unlist(lapply(nc, is.null)))
   if (length(nc_null) > 0) {
-    nc_fill <- create_nouns_batch(docs$paper_abstract, lang=lang)
+    nc_fill <- create_nouns_batch(docs$paper_abstract[nc_null], lang=lang)
     mapply(post_nouns, docs[nc_null, 'id'], nc_fill, MoreArgs=list(index=index))
     nc[nc_null] <- nc_fill
   }
@@ -71,7 +71,7 @@ get_or_create_ne_async <- function(docs, index, lang) {
   ne <- synchronise(async_map(docs$id, get_ne, index=index))
   ne_null <- which(unlist(lapply(ne, is.null)))
   if (length(ne_null) > 0) {
-    ne_fill <- create_ne_batch(docs$paper_abstract, lang=lang)
+    ne_fill <- create_ne_batch(docs$paper_abstract[ne_null], lang=lang)
     mapply(post_ne, docs[ne_null, 'id'], ne_fill, MoreArgs=list(index=index))
     ne[ne_null] <- ne_fill
   }
