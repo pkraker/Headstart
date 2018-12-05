@@ -23,7 +23,7 @@ create_corpus <- function(metadata, text, lang=NULL) {
   unlowered <- corpus
   #corpus <- tm_map(corpus, removePunctuation)
   corpus <- tm_map(corpus, content_transformer(tolower))
-  corpus <- tm_map(corpus, remove_stop_words)
+  #corpus <- tm_map(corpus, remove_stop_words)
   #corpus <- tm_map(corpus, stripWhitespace)
   unstemmed <- corpus
   stemmed <- tm_map(corpus, stemDocument)
