@@ -94,7 +94,7 @@ get_cluster_corpus <- function(clusters, metadata, stops, taxonomy_separator) {
     subjects = mapply(gsub, subjects, pattern=" ", replacement="_")
     titles = mapply(gsub, titles, pattern=" ", replacement=";")
     noun_chunks = mapply(gsub, noun_chunks, pattern = "; ", replacement=";")
-    noun_chunks = mapply(gsub, noun_chunks, pattern=" ", replacement="_")
+    noun_chunks_ng = mapply(gsub, noun_chunks, pattern=" ", replacement="_")
 
     if (!is.null(taxonomy_separator)) {
       subjects = mapply(function(x){strsplit(x, ";")}, subjects)
@@ -105,7 +105,7 @@ get_cluster_corpus <- function(clusters, metadata, stops, taxonomy_separator) {
       subjects = lapply(subjects, function(x){paste(unlist(x), collapse=";")})
       subjects = mapply(paste, subjects, taxons, collapse=";")
     }
-    all_subjects = paste(noun_chunks, collapse=";")
+    all_subjects = paste(noun_chunks, noun_chunks_ng, collapse=";")
     all_subjects = gsub(",", ";", all_subjects)
     subjectlist = c(subjectlist, all_subjects)
   }
