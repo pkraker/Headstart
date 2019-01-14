@@ -5,9 +5,27 @@ var options_linkedcat = {
                 {id: "any-time-years", text: "Jederzeit"}
                 , {id: "user-defined", text: "Zeitraum", class: "user-defined",
                     inputs: [
-                        {id: "from", label: "From: ", class: "time_input"}
-                        , {id: "to", label: "To: ", class: "time_input"}
+                        {id: "from", label: "Von: ", class: "time_input"}
+                        , {id: "to", label: "bis: ", class: "time_input"}
                     ]}
+            ]},
+        {id: "include_content_type", multiple: true, name: "Dokumentarten", type: "dropdown"
+            , fields: [
+                {id: "Anthologie", text: "Anthologie"}
+                , {id: "Bericht", text: "Bericht", selected:true}
+                , {id: "Bibliografie", text: "Bibliografie"}
+                , {id: "Biografie", text: "Biografie"}
+                , {id: "Briefsammlung", text: "Briefsammlung"}
+                , {id: "Katalog", text: "Katalog"}
+                , {id: "Kommentar", text: "Kommentar"}
+                , {id: "Mehrsprachiges Woerterbuch", text: "Mehrsprachiges Woerterbuch"}
+                , {id: "Mitgliederverzeichnis", text: "Mitgliederverzeichnis"}
+                , {id: "Quelle", text: "Quelle"}
+                , {id: "Reisebericht", text: "Reisebericht"}
+                , {id: "Rezension", text: "Rezension"}
+                , {id: "Statistik", text: "Statistik"}
+                , {id: "Verzeichnis", text: "Verzeichnis"}
+                , {id: "Woerterbuch", text: "Woerterbuch"}
             ]},
     ]
 }
@@ -113,7 +131,7 @@ var SearchOptions = {
          .attr("class", "frontend-btn")
          .style("vertical-align", "middle")
          .text("Submit");
-         
+
          /*d3.select(tag).append("div")
          .attr("id", "stats")
          .attr("class", "divity")
@@ -165,18 +183,18 @@ var SearchOptions = {
 
         })
     },
-    setDateRangeFromPreset: function (from, to, val, start_date) {	
+    setDateRangeFromPreset: function (from, to, val, start_date) {
 	var start = new Date();
         var end = new Date();
         end.setYear(1918)
-        
+
         switch (val) {
 
             case "user-defined":
                 self.user_defined_date = true;
                 d3.select("#input-container").style("display", "block");
                 break;
-            
+
             //full date
             case "any-time":
                 if(typeof start_date === "undefined") {
@@ -196,7 +214,7 @@ var SearchOptions = {
                 start.setFullYear(end.getFullYear() - 1);
                 this.setDateFields(from, to, start, end);
                 break;
-            
+
             //years only
             case "any-time-years":
                 if(typeof start_date === "undefined") {

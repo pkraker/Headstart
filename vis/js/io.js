@@ -167,22 +167,53 @@ IO.prototype = {
         var xy_array = [];
         // convert to numbers
         var cur_data = fs;
-        var has_keywords = false;
         var num_oa = 0;
         var num_papers = 0;
         var num_datasets = 0;
         cur_data.forEach(function (d) {
-            d.x = parseFloat(d.x);
-            d.y = parseFloat(d.y);
+            
+            //convert special entities to characters
+            for (let field in d) {
+               d[field] = $("<textarea/>").html(d[field]).val();
+           }
+            // convert authors to "[first name] [last name]"
+            // var authors = d.authors.split(";");
+            var authors = _this.convertToFirstNameLastName(d.authors);
+            d.authors_string = authors.string;
+            d.authors_short_string = authors.short_string;
+            
+            //replace "<" and ">" to avoid having HTML tags
+            for (let field in d) {
+                d[field] = d[field].replace(/</g, "&lt;");
+                d[field] = d[field].replace(/>/g, "&gt;");
+            }
+            
+            if(d.hasOwnProperty("snippets") && d.snippets !== "") {
+                d.snippets = d.snippets.replace(/&lt;em&gt;/g, "<em>");
+                d.snippets = d.snippets.replace(/&lt;\/em&gt;/g, "</em>");
+                d.paper_abstract = d.snippets;
+            }
+            
+            let prepareCoordinates = function(coordinate) {
+                if (isNaN(parseFloat(coordinate))) {
+                    return 0;
+                }
+                
+                return parseFloat(coordinate).toFixed(8);
+            }
+            
+            d.x = prepareCoordinates(d.x);
+            d.y = prepareCoordinates(d.y);
             //if two items have the exact same location,
             // that throws off the force-based layout
             var xy_string = d.x + d.y;
             while (xy_array.hasOwnProperty(xy_string)) {
-                d.y += 0.00000001;
+                d.y = parseFloat(d.y) + Number(0.00000001);
                 xy_string = d.x + d.y;
             }
 
             xy_array[xy_string] = true;
+            
             d.paper_abstract = _this.setToStringIfNullOrUndefined(d.paper_abstract, "");
             d.published_in = _this.setToStringIfNullOrUndefined(d.published_in, "");
             d.title = _this.setToStringIfNullOrUndefined(d.title,
@@ -237,7 +268,7 @@ IO.prototype = {
                     d.num_subentries++;
                 })
             }
-            
+                      
             if (typeof highlight_data != 'undefined' && highlight_data !== null) {
                 if (highlight_data.bookmarks_all !== null) {
                     highlight_data.bookmarks_all.forEach(function (x) {
@@ -260,12 +291,6 @@ IO.prototype = {
             }
 
             d.paper_selected = false;
-
-            // convert authors to "[first name] [last name]"
-            // var authors = d.authors.split(";");
-            var authors = _this.convertToFirstNameLastName(d.authors);
-            d.authors_string = authors.string;
-            d.authors_short_string = authors.short_string;
             
             d.oa = false;
 
@@ -299,13 +324,8 @@ IO.prototype = {
             num_papers += (d.resulttype === 'publication')?(1):(0);
             num_datasets += (d.resulttype === 'dataset')?(1):(0);
 
-            if(d.hasOwnProperty("subject_orig")) {
-                has_keywords = true;
-            }
-
         });
         
-        config.show_keywords = (has_keywords)?(true):(false);
         this.num_oa = num_oa;
         this.num_papers = num_papers;
         this.num_datasets = num_datasets;

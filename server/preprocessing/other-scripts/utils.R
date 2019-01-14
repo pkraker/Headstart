@@ -77,9 +77,6 @@ setup_logging <- function(loglevel) {
 
 
 get_api_lang <- function(lang_id, valid_langs, api) {
-  if (api == 'linkedcat') {
-      lang_id <- 'ger'
-    }
   if (lang_id == 'all'){
     LANGUAGE <- 'english'
   } else if (!is.null(valid_langs$lang_id)){
@@ -87,5 +84,30 @@ get_api_lang <- function(lang_id, valid_langs, api) {
   } else {
     LANGUAGE <- 'english'
   }
+  if (api == 'linkedcat') {
+      lang_id <- 'ger'
+      LANGUAGE <- 'german'
+    }
   return (list(lang_id = lang_id, name = LANGUAGE))
+}
+
+
+detect_error <- function(failed) {
+  output <- list()
+  reason <- list()
+  # first identify criteria
+  if (length(unlist(strsplit(failed$query, " "))) < 4) {
+    reason <- c(reason, 'typo', 'too specific')
+  } else {
+    reason <- c(reason, 'query length', 'too specific')
+  }
+  if (!is.null(failed$params$to) &&
+      !is.null(failed$params$from) &&
+      difftime(failed$params$to, failed$params$from) <= 60) {
+    reason <- c(reason, 'timeframe too short')
+  }
+  # then return them as json list
+  output$reason <- reason
+  output$status <- 'error'
+  return(toJSON(output, auto_unbox = TRUE))
 }

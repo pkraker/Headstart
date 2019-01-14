@@ -36,6 +36,7 @@ lclog <- getLogger('api.linkedcat')
 
 get_papers <- function(query, params, limit=100) {
 
+  hl_flag <- TRUE
 
   lclog$info(paste("Search: ", query, sep=""))
   start.time <- Sys.time()
@@ -46,7 +47,13 @@ get_papers <- function(query, params, limit=100) {
   q_params <- build_query(query, params, limit)
   # do search
   lclog$info(paste("Query:", paste(q_params, collapse = " ")))
-  res <- solr_all(conn, "linkedcat", params = q_params)
+
+  if (hl_flag) {
+    res <- solr_all(conn, "linkedcat", params = q_params)
+  } else {
+    q_params$hl <- 'off'
+    res <- solr_all(conn, "linkedcat", params = q_params)
+  }
 
   if (nrow(res$search) == 0){
     stop(paste("No results retrieved."))
@@ -54,9 +61,13 @@ get_papers <- function(query, params, limit=100) {
 
   # make results dataframe
   metadata <- data.frame(res$search)
-  highlights <- data.frame(res$high)
-  highlights <- ddply(highlights, .(names), summarize, snippets=paste(ocrtext, collapse="\n"))
-  metadata <- merge(x = metadata, y = highlights, by.x='id', by.y='names')
+  if (hl_flag) {
+    highlights <- data.frame(res$high)
+    names(highlights) <- c("id", "snippets")
+    metadata <- merge(x = metadata, y = highlights, by.x='id', by.y='id')
+  } else {
+    metadata$snippets <- ""
+  }
 
   metadata[is.na(metadata)] <- ""
   metadata$subject <- if (!is.null(metadata$keyword_a)) metadata$keyword_a else ""
@@ -66,15 +77,17 @@ get_papers <- function(query, params, limit=100) {
   metadata$paper_abstract <- if (!is.null(metadata$ocrtext)) metadata$ocrtext else ""
   metadata$year <- metadata$pub_year
   metadata$readers <- 0
-  metadata$url <- "" # needs fix
+  metadata$url <- metadata$id
   metadata$link <- "" # needs fix
-  metadata$published_in <- "" # needs fix
+  metadata$published_in <- metadata$host_label
   metadata$oa_state <- 1
+  metadata$subject_orig = metadata$subject
+  metadata$relevance = c(nrow(metadata):1)
 
   text = data.frame(matrix(nrow=nrow(metadata)))
   text$id = metadata$id
   # Add all keywords, including classification to text
-  text$content = paste(metadata$ocrtext_good,
+  text$content = paste(metadata$main_title, metadata$keyword_a,
                        sep = " ")
 
 
@@ -105,7 +118,6 @@ build_query <- function(query, params, limit){
 
   # additional filter params
   pub_year <- paste0("pub_year:", "[", params$from, " TO ", params$to, "]")
-  params$include_content_type <- c('Bericht')
   if (!params$include_content_type[1] == 'all') {
       if (length(params$include_content_type) > 1) {
         content_type <- paste0("content_type_a_str:(",
@@ -123,6 +135,8 @@ build_query <- function(query, params, limit){
   # q_params$hl.fl <- paste(q_fields, collapse=",")
   q_params$hl.fl <- 'ocrtext'
   q_params$hl.snippets <- 100
+  q_params$hl.method <- 'unified'
+  q_params$hl.tag.ellipsis <- " ... "
   # end adding filter params
   return(q_params)
 }
