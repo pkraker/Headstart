@@ -4,6 +4,12 @@ library('async')
 
 set_config(timeout(90))
 
+map_lang <- list(
+  "eng"="en",
+  "en"="en",
+  "english"="en"
+)
+
 get_nouns <- function(id, index) {
   url <- paste("http://localhost:5001/noun_chunks", index, id, sep="/")
   res <- GET(url)
@@ -13,7 +19,7 @@ get_nouns <- function(id, index) {
 
 create_nouns <- function(text, index, lang) {
   url <- "http://localhost:5002/tag"
-  body <- list(lang=, doc=toJSON(text))
+  body <- list(lang=map_lang[[lang]], doc=toJSON(text))
   res <- POST(url, body=body, encode='json')
   nc <- unlist(httr::content(res)$noun_chunks)
   return(nc)
@@ -21,7 +27,7 @@ create_nouns <- function(text, index, lang) {
 
 create_nouns_batch <- function(docs, lang) {
   url <- "http://localhost:5002/batch_pos"
-  body <- list(lang=lang, docs=toJSON(docs))
+  body <- list(lang=map_lang[[lang]], docs=toJSON(docs))
   res <- POST(url, body=body, encode='json')
   nc <- httr::content(res)$noun_chunks
   nc <- lapply(nc, unlist)
@@ -38,7 +44,7 @@ get_or_create_nouns_async <- function(docs, index, lang) {
   nc <- synchronise(async_map(docs$id, get_nouns, index=index))
   nc_null <- which(unlist(lapply(nc, is.null)))
   if (length(nc_null) > 0) {
-    nc_fill <- create_nouns_batch(docs$paper_abstract[nc_null], lang=lang)
+    nc_fill <- create_nouns_batch(docs$paper_abstract[nc_null], lang=map_lang[[lang]])
     mapply(post_nouns, docs[nc_null, 'id'], nc_fill, MoreArgs=list(index=index))
     nc[nc_null] <- nc_fill
   }
@@ -54,7 +60,7 @@ get_ne <- function(id, index) {
 
 create_ne_batch <- function(docs, lang) {
   url <- "http://localhost:5002/batch_ner"
-  body <- list(lang=lang, docs=toJSON(docs))
+  body <- list(lang=map_lang[[lang]], docs=toJSON(docs))
   res <- POST(url, body=body, encode='json')
   ne <- httr::content(res)$entities
   ne <- lapply(ne, unlist)
@@ -71,11 +77,29 @@ get_or_create_ne_async <- function(docs, index, lang) {
   ne <- synchronise(async_map(docs$id, get_ne, index=index))
   ne_null <- which(unlist(lapply(ne, is.null)))
   if (length(ne_null) > 0) {
-    ne_fill <- create_ne_batch(docs$paper_abstract[ne_null], lang=lang)
+    ne_fill <- create_ne_batch(docs$paper_abstract[ne_null], lang=map_lang[[lang]])
     mapply(post_ne, docs[ne_null, 'id'], ne_fill, MoreArgs=list(index=index))
     ne[ne_null] <- ne_fill
   }
   return(ne)
+}
+
+get_summary <- function(doc, lang, top_n){
+  url <- "http://localhost:5003/summarize"
+  body <- list(doc = toJSON(doc), top_n = top_n, lang=map_lang[[lang]], method = "noun_chunks")
+  res <- POST(url, body=body, encode='json')
+  summary <- httr::content(res)$summary
+  return(summary)
+}
+
+create_cluster_labels <- function(clusters, metadata, lang, top_n){
+  clusters$cluster_labels = ""
+  for (k in seq(1, clusters$num_clusters)) {
+    targets <- names(subset(clusters$groups, clusters$groups == k))
+    doc <- paste(subset(metadata$paper_abstract, metadata$id %in% targets), collapse=" ")
+    summary <- get_summary(doc, lang, top_n)
+    print(summary)
+  }
 }
 
 #noun_chunks <- get_or_create_nouns_async(metadata, index)
