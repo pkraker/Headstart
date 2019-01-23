@@ -86,10 +86,7 @@ vis_layout <- function(text, metadata, service,
 
   vlog$debug("get cluster summaries")
   metadata = replace_keywords_if_empty(metadata, stops)
-  named_clusters <- create_cluster_labels(clusters, metadata, lang,
-                                          corpus$unlowered,
-                                          weightingspec="ntn", top_n=3,
-                                          stops=stops, taxonomy_separator)
+  named_clusters <- create_cluster_labels(clusters, metadata, lang, top_n=3)
 
 
   vlog$debug("create output")

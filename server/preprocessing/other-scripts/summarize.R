@@ -24,33 +24,33 @@ prune_ngrams <- function(ngrams, stops){
   return (tokens)
 }
 
-create_cluster_labels <- function(clusters, metadata, lang,
-                                  unlowered_corpus,
-                                  weightingspec,
-                                  top_n, stops, taxonomy_separator="/") {
-  nn_corpus <- get_cluster_corpus(clusters, metadata, stops, taxonomy_separator)
-  nn_tfidf <- TermDocumentMatrix(nn_corpus, control = list(
-                                      tokenize = SplitTokenizer,
-                                      weighting = function(x) weightSMART(x, spec="ntn"),
-                                      bounds = list(local = c(2, Inf)),
-                                      tolower = TRUE
-                                ))
-  tfidf_top <- apply(nn_tfidf, 2, function(x) {x2 <- sort(x, TRUE);x2[x2>0]})
-  empty_tfidf <- which(apply(nn_tfidf, 2, sum)==0)
-  tfidf_top[c(empty_tfidf)] <- fill_empty_clusters(nn_tfidf, nn_corpus)[c(empty_tfidf)]
-  tfidf_top_names <- get_top_names(tfidf_top, top_n, stops)
-  clusters$cluster_labels = ""
-  for (k in seq(1, clusters$num_clusters)) {
-    group = c(names(clusters$groups[clusters$groups == k]))
-    matches = which(clusters$labels%in%group)
-    clusters$cluster_labels[c(matches)] = tfidf_top_names[k]
-  }
-  clusters$cluster_labels <- fill_empty_areatitles(clusters$cluster_labels, metadata)
-  clusters$cluster_labels <- unlist(clusters$cluster_labels)
-  type_counts <- get_type_counts(unlowered_corpus)
-  clusters$cluster_labels <- fix_cluster_labels(clusters$cluster_labels, type_counts)
-  return(clusters)
-}
+# create_cluster_labels <- function(clusters, metadata, lang,
+#                                   unlowered_corpus,
+#                                   weightingspec,
+#                                   top_n, stops, taxonomy_separator="/") {
+#   nn_corpus <- get_cluster_corpus(clusters, metadata, stops, taxonomy_separator)
+#   nn_tfidf <- TermDocumentMatrix(nn_corpus, control = list(
+#                                       tokenize = SplitTokenizer,
+#                                       weighting = function(x) weightSMART(x, spec="ntn"),
+#                                       bounds = list(local = c(2, Inf)),
+#                                       tolower = TRUE
+#                                 ))
+#   tfidf_top <- apply(nn_tfidf, 2, function(x) {x2 <- sort(x, TRUE);x2[x2>0]})
+#   empty_tfidf <- which(apply(nn_tfidf, 2, sum)==0)
+#   tfidf_top[c(empty_tfidf)] <- fill_empty_clusters(nn_tfidf, nn_corpus)[c(empty_tfidf)]
+#   tfidf_top_names <- get_top_names(tfidf_top, top_n, stops)
+#   clusters$cluster_labels = ""
+#   for (k in seq(1, clusters$num_clusters)) {
+#     group = c(names(clusters$groups[clusters$groups == k]))
+#     matches = which(clusters$labels%in%group)
+#     clusters$cluster_labels[c(matches)] = tfidf_top_names[k]
+#   }
+#   clusters$cluster_labels <- fill_empty_areatitles(clusters$cluster_labels, metadata)
+#   clusters$cluster_labels <- unlist(clusters$cluster_labels)
+#   type_counts <- get_type_counts(unlowered_corpus)
+#   clusters$cluster_labels <- fix_cluster_labels(clusters$cluster_labels, type_counts)
+#   return(clusters)
+# }
 
 
 fix_cluster_labels <- function(clusterlabels, type_counts){
