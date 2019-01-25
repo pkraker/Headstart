@@ -84,24 +84,23 @@ get_or_create_ne_async <- function(docs, index, lang) {
   return(ne)
 }
 
-get_summary <- function(doc, top_n){
-  url <- "http://localhost:5003/summarize"
-  body <- list(doc = toJSON(doc), top_n = top_n, method = "noun_chunks")
+get_summaries <- function(clustered_docs, lang, top_n){
+  url <- "http://localhost:5003/summarize_clusters"
+  body <- list(clustered_docs = toJSON(clustered_docs), lang = lang, top_n = top_n)
   res <- POST(url, body=body, encode='json')
-  summary <- httr::content(res)$summary
-  return(summary)
+  summaries <- httr::content(res)$summaries
+  return(summaries)
 }
 
 create_cluster_labels <- function(clusters, metadata, lang, top_n){
   clusters$cluster_labels = ""
-  docs = list()
+  clustered_docs = list()
   for (k in seq(1, clusters$num_clusters)) {
     targets <- names(subset(clusters$groups, clusters$groups == k))
-    doc <- paste(subset(metadata$noun_chunks, metadata$id %in% targets), collapse="; ")
-    doc <- strsplit(doc, "; ")
-    docs <- c(docs, doc)
+    docs <- list(lapply(subset(metadata$noun_chunks, metadata$id %in% targets), strsplit, split="; "))
+    clustered_docs <- c(clustered_docs, docs)
   }
-  summaries <- synchronise(async_map(docs, get_summary, top_n=top_n))
+  summaries <- get_summaries(clustered_docs, lang, top_n)
   for (k in seq(1, clusters$num_clusters)) {
     group = c(names(clusters$groups[clusters$groups == k]))
     matches = which(clusters$labels%in%group)
