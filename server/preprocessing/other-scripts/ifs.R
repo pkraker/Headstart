@@ -44,7 +44,7 @@ get_or_create_nouns_async <- function(docs, index, lang) {
   nc <- synchronise(async_map(docs$id, get_nouns, index=index))
   nc_null <- which(unlist(lapply(nc, is.null)))
   if (length(nc_null) > 0) {
-    nc_fill <- create_nouns_batch(paste(docs$title, docs$paper_abstract, sep=". ")[nc_null], lang=map_lang[[lang]])
+    nc_fill <- create_nouns_batch(paste(docs$title, docs$subject, docs$paper_abstract, sep=". ")[nc_null], lang=map_lang[[lang]])
     mapply(post_nouns, docs[nc_null, 'id'], nc_fill, MoreArgs=list(index=index))
     nc[nc_null] <- nc_fill
   }
