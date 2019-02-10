@@ -52,6 +52,33 @@ prune_ngrams <- function(ngrams, stops){
 #   return(clusters)
 # }
 
+get_summaries <- function(clustered_docs, lang, top_n){
+  url <- "http://localhost:5003/summarize_clusters"
+  body <- list(clustered_docs = toJSON(clustered_docs),
+               lang = lang, top_n = top_n,
+               method = 'weighted', weights = c(0.6, 0.4))
+  res <- POST(url, body=body, encode='json')
+  summaries <- httr::content(res)$summaries
+  return(summaries)
+}
+
+create_cluster_labels <- function(clusters, metadata, lang, top_n){
+  clusters$cluster_labels = ""
+  clustered_docs = list()
+  for (k in seq(1, clusters$num_clusters)) {
+    targets <- names(subset(clusters$groups, clusters$groups == k))
+    docs <- list(lapply(subset(metadata$noun_chunks, metadata$id %in% targets), strsplit, split="; "))
+    clustered_docs <- c(clustered_docs, docs)
+  }
+  summaries <- get_summaries(clustered_docs, lang, top_n)
+  for (k in seq(1, clusters$num_clusters)) {
+    group = c(names(clusters$groups[clusters$groups == k]))
+    matches = which(clusters$labels%in%group)
+    clusters$cluster_labels[c(matches)] = summaries[k]
+  }
+  return(clusters)
+}
+
 
 fix_cluster_labels <- function(clusterlabels, type_counts){
   unlist(lapply(clusterlabels, function(x) {
