@@ -61,10 +61,24 @@ get_papers <- function(query, params = NULL, limit = 100) {
   #query <- paste0(query, article_types_string, exclude_articles_with_abstract)
   query <- paste0(query, exclude_articles_with_abstract)
   plog$info(paste("Query:", query))
-  x <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit,
-                              mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
-  res <- rentrez::entrez_fetch(db = "pubmed", web_history = x$web_history, retmax = limit, rettype = "xml")
-  xml <- xml2::xml_children(xml2::read_xml(res))
+
+  limit1 = ifelse(limit <= 50, limit, 50)
+  limit2 = limit-50
+  search1 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit1,
+                                    mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
+  res1 <- rentrez::entrez_fetch(db = "pubmed", web_history = search1$web_history,
+                                retmax = 50, rettype = "xml")
+  if (limit2 > 0) {
+    search2 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit2, retstart = 51,
+                                      mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
+    res2 <- rentrez::entrez_fetch(db = "pubmed", web_history = search2$web_history,
+                                  retmax = limit2, rettype = "xml")
+    xml <- c(xml2::xml_children(xml2::read_xml(res1)), xml2::xml_children(xml2::read_xml(res2)))
+  } else {
+    xml <- xml2::xml_children(xml2::read_xml(res1))
+  }
+
+
   out <- lapply(xml, function(z) {
     flds <- switch(
       xml2::xml_name(z),
