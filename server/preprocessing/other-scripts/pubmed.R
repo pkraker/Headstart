@@ -1,6 +1,7 @@
 library("rentrez")
 library("data.table")
 library("xml2")
+library("tidyverse")
 
 # get_papers for Pubmed via Entrez API
 #
@@ -69,9 +70,9 @@ get_papers <- function(query, params = NULL, limit = 100) {
   res1 <- rentrez::entrez_fetch(db = "pubmed", web_history = search1$web_history,
                                 retmax = 50, rettype = "xml")
   if (limit2 > 0) {
-    search2 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit2, retstart = 51,
+    search2 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit2,
                                       mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
-    res2 <- rentrez::entrez_fetch(db = "pubmed", web_history = search2$web_history,
+    res2 <- rentrez::entrez_fetch(db = "pubmed", web_history = search2$web_history, retstart = 50,
                                   retmax = limit2, rettype = "xml")
     xml <- c(xml2::xml_children(xml2::read_xml(res1)), xml2::xml_children(xml2::read_xml(res2)))
   } else {
@@ -137,23 +138,32 @@ get_papers <- function(query, params = NULL, limit = 100) {
   df$id = df$pmid
   df$subject_orig = df$subject
 
-  summary <- rentrez::entrez_summary(db="pubmed", web_history = x$web_history, retmax = limit)
-  df$readers <- extract_from_esummary(summary, "pmcrefcount")
-  df$readers <- replace(df$readers, df$readers=="", 0)
+  summary1 <- rentrez::entrez_summary(db="pubmed", web_history = search1$web_history, retmax = limit1)
+  readers <- data.frame(list(readers=extract_from_esummary(summary1, "pmcrefcount")))
+  readers$pmid <- rownames(readers)
+  if (limit2 > 0) {
+    summary2 <- rentrez::entrez_summary(db="pubmed", web_history = search2$web_history, retmax = limit2, retstart=50)
+    readers2 <- data.frame(list(readers=extract_from_esummary(summary2, "pmcrefcount")))
+    readers2$pmid <- rownames(readers2)
+    readers <- rbind(readers, readers2)
+  }
+  df <- merge(df, readers, by="pmid", all.x=TRUE)
 
-  pmc_ids = c()
-  idlist = extract_from_esummary(summary, "articleids")
-
-  for(i in 1:nrow(df)) {
-    current_ids = idlist[,i]
-    current_pmcid = current_ids$value[current_ids$idtype=="pmc"]
-    if(identical(current_pmcid, character(0))) {
-      current_pmcid = "";
-    }
-    pmc_ids[i] = current_pmcid
+  idlist = extract_from_esummary(summary1, "articleids", simplify = FALSE)
+  if (limit2 > 0) {
+    idlist2 = extract_from_esummary(summary2, "articleids", simplify = FALSE)
   }
 
-  df$pmcid = pmc_ids
+  pmc_ids <- data.frame(list(pmcid=cbind(lapply(idlist, function(x) x$articleids %>% subset(idtype=="pmc") %>% select(value) %>% pull()))))
+  pmc_ids$pmid <- rownames(pmc_ids)
+  if (limit2 > 0) {
+    pmc_ids2 <- data.frame(list(pmcid=cbind(lapply(idlist2, function(x) x$articleids %>% subset(idtype=="pmc") %>% select(value) %>% pull()))))
+    pmc_ids2$pmid <- rownames(pmc_ids2)
+    pmc_ids <- rbind(pmc_ids, pmc_ids2)
+  }
+  
+  pmc_ids <- unnest(pmc_ids)
+  df <- merge(df, pmc_ids, by="pmid", all.x=TRUE)
 
   end.time <- Sys.time()
   time.taken <- end.time - start.time
