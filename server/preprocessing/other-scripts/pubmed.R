@@ -63,21 +63,17 @@ get_papers <- function(query, params = NULL, limit = 100) {
   query <- paste0(query, exclude_articles_with_abstract)
   plog$info(paste("Query:", query))
 
-  limit1 = ifelse(limit <= 50, limit, 50)
-  limit2 = limit-50
-  search1 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit1,
-                                    mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
-  res1 <- rentrez::entrez_fetch(db = "pubmed", web_history = search1$web_history,
-                                retmax = 50, rettype = "xml")
-  if (limit2 > 0) {
-    search2 <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit2,
-                                      mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
-    res2 <- rentrez::entrez_fetch(db = "pubmed", web_history = search2$web_history, retstart = 50,
-                                  retmax = limit2, rettype = "xml")
-    xml <- c(xml2::xml_children(xml2::read_xml(res1)), xml2::xml_children(xml2::read_xml(res2)))
-  } else {
-    xml <- xml2::xml_children(xml2::read_xml(res1))
-  }
+  n_batches = ceiling(limit/25)
+  limits <- table(cut(1:limit, n_batches, labels=FALSE))
+  retstarts <- cumsum(limits) - limits
+  search <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit,
+                                   mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
+  res <- lapply(1:n_batches, function(i){
+    rentrez::entrez_fetch(db = "pubmed", web_history = search$web_history,
+                          retstart = retstarts[i], retmax = limits[i], rettype = "xml")
+  })
+  
+  xml <-sapply(res, function(x) xml2::xml_children(xml2::read_xml(x)))
 
 
   out <- lapply(xml, function(z) {
@@ -138,6 +134,11 @@ get_papers <- function(query, params = NULL, limit = 100) {
   df$id = df$pmid
   df$subject_orig = df$subject
 
+  summaries <- lapply(1:n_batches, function(i){
+    rentrez::entrez_summary(db="pubmed", web_history = search$web_history, retmax = limits[i], retstart=retstarts[i])
+  })
+  readers <- sapply(summaries, function(x) extract_from_esummary(x, elements="pmcrefcount"))
+  
   summary1 <- rentrez::entrez_summary(db="pubmed", web_history = search1$web_history, retmax = limit1)
   readers <- data.frame(list(readers=extract_from_esummary(summary1, "pmcrefcount")))
   readers$pmid <- rownames(readers)
