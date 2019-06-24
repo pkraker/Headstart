@@ -68,8 +68,12 @@ get_papers <- function(query, params = NULL, limit = 100) {
   retstarts <- cumsum(limits) - limits
   search <- rentrez::entrez_search(db = "pubmed", term = query, retmax = limit,
                                    mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
+  searches <- lapply(1:n_batches, function(i) {
+    rentrez::entrez_search(db = "pubmed", term = query, retmax = limits[i], retstart = retstarts[i],
+                           mindate = from, maxdate = to, sort=sortby, use_history=TRUE)
+  })
   res <- lapply(1:n_batches, function(i){
-    rentrez::entrez_fetch(db = "pubmed", web_history = search$web_history,
+    rentrez::entrez_fetch(db = "pubmed", web_history = searches[[i]]$web_history,
                           retstart = retstarts[i], retmax = limits[i], rettype = "xml")
   })
   
@@ -134,35 +138,14 @@ get_papers <- function(query, params = NULL, limit = 100) {
   df$id = df$pmid
   df$subject_orig = df$subject
 
-  summaries <- lapply(1:n_batches, function(i){
-    rentrez::entrez_summary(db="pubmed", web_history = search$web_history, retmax = limits[i], retstart=retstarts[i])
-  })
-  readers <- sapply(summaries, function(x) extract_from_esummary(x, elements="pmcrefcount"))
-  
-  summary1 <- rentrez::entrez_summary(db="pubmed", web_history = search1$web_history, retmax = limit1)
-  readers <- data.frame(list(readers=extract_from_esummary(summary1, "pmcrefcount")))
+  summary <- rentrez::entrez_summary(db="pubmed", web_history = search$web_history, retmax = limit)
+  readers <- data.frame(list(readers=extract_from_esummary(summary, "pmcrefcount")))
   readers$pmid <- rownames(readers)
-  if (limit2 > 0) {
-    summary2 <- rentrez::entrez_summary(db="pubmed", web_history = search2$web_history, retmax = limit2, retstart=50)
-    readers2 <- data.frame(list(readers=extract_from_esummary(summary2, "pmcrefcount")))
-    readers2$pmid <- rownames(readers2)
-    readers <- rbind(readers, readers2)
-  }
   df <- merge(df, readers, by="pmid", all.x=TRUE)
 
-  idlist = extract_from_esummary(summary1, "articleids", simplify = FALSE)
-  if (limit2 > 0) {
-    idlist2 = extract_from_esummary(summary2, "articleids", simplify = FALSE)
-  }
-
+  idlist = extract_from_esummary(summary, "articleids", simplify = FALSE)
   pmc_ids <- data.frame(list(pmcid=cbind(lapply(idlist, function(x) x$articleids %>% subset(idtype=="pmc") %>% select(value) %>% pull()))))
   pmc_ids$pmid <- rownames(pmc_ids)
-  if (limit2 > 0) {
-    pmc_ids2 <- data.frame(list(pmcid=cbind(lapply(idlist2, function(x) x$articleids %>% subset(idtype=="pmc") %>% select(value) %>% pull()))))
-    pmc_ids2$pmid <- rownames(pmc_ids2)
-    pmc_ids <- rbind(pmc_ids, pmc_ids2)
-  }
-  
   pmc_ids <- unnest(pmc_ids)
   df <- merge(df, pmc_ids, by="pmid", all.x=TRUE)
 
