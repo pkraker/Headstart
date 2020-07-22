@@ -707,9 +707,12 @@ class Canvas {
 
         $("#context").css("display", "none");
         
-        mediator.publish("show_backlink", function () {
+        $("#backlink").remove();
+        $('<p id="backlink" class="backlink backlink-streamgraph"><a class="underline">' + config.localization[config.language].backlink + '</a></p>').insertBefore("#context");
+
+        $("#backlink").on("click", function () {
             mediator.publish("streamgraph_chart_clicked");
-        });
+        })
     }
     
     removeAreaStreamgraph() {

@@ -490,9 +490,7 @@ BubblesFSM.prototype = {
         if (previous_zoom_node === null) {
             $("#context").css("display", "none");
 
-            mediator.publish('show_backlink', function () {
-                mediator.publish('chart_svg_click');
-            });
+            mediator.publish('show_backlink');
         }
 
         d3.selectAll("div.paper_holder")

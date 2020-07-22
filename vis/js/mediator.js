@@ -45,7 +45,7 @@ var MyMediator = function() {
     this.mediator = new Mediator();
     this.manager = new ModuleManager();
     this.modern_frontend_enabled = config.modern_frontend_enabled
-    this.modern_frontend_intermediate = new Intermediate(this.modern_frontend_enabled)
+    this.modern_frontend_intermediate = new Intermediate(this.modern_frontend_enabled, this.chart_svg_click)
     this.init();
     this.init_state();
 };
@@ -137,7 +137,7 @@ MyMediator.prototype = {
         this.mediator.subscribe("streamgraph_chart_clicked", this.streamgraph_chart_clicked)
 
         // refactor
-        this.mediator.subscribe("show_backlink", this.show_backlink);
+        this.mediator.subscribe("register_zoomout_callback", this.register_zoomout_callback)
         this.mediator.subscribe("hide_backlink", this.hide_backlink);
     },
 
@@ -550,6 +550,7 @@ MyMediator.prototype = {
             }
         }
         mediator.manager.call('list', 'count_visible_items_to_header', []);
+        mediator.modern_frontend_intermediate.zoomIn();
     },
     bubble_zoomout: function() {
         mediator.manager.call('list', 'reset', []);
@@ -566,6 +567,7 @@ MyMediator.prototype = {
             mediator.manager.call('list', 'scrollTop', []);
         else
             mediator.manager.call('list', 'scrollToEntry', [mediator.current_enlarged_paper.safe_id]);
+        mediator.modern_frontend_intermediate.zoomOut();
     },
     
     zoomout_complete: function() {
@@ -716,10 +718,12 @@ MyMediator.prototype = {
         mediator.manager.call('canvas', 'dotdotdotAreaTitles', []);
     },
 
+    register_zoomout_callback: function(callback) {
+        mediator.modern_frontend_intermediate.setZoomOutCallback(callback)
+    },
+
     show_backlink: function(onClick) {
-        if (mediator.modern_frontend_enabled) {
-            mediator.modern_frontend_intermediate.showBacklink(onClick);
-        } else {
+        if (!mediator.modern_frontend_enabled) {
             $("#backlink").remove();
             $('<p id="backlink" class="backlink"><a class="underline">' + config.localization[config.language].backlink + '</a></p>').insertBefore("#context");
             $("#backlink").on("click", onClick);
@@ -727,9 +731,7 @@ MyMediator.prototype = {
     },
 
     hide_backlink: function() {
-        if (mediator.modern_frontend_enabled) {
-            mediator.modern_frontend_intermediate.hideBacklink();
-        } else {
+        if (!mediator.modern_frontend_enabled) {
             $("#backlink").remove();
         }
     }
