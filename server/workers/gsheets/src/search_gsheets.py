@@ -1,4 +1,5 @@
 import os
+import pathlib
 import sys
 import json
 import time
@@ -16,7 +17,8 @@ from google.auth.transport.requests import Request
 import pandas as pd
 from pandas_schema import Column, Schema
 from pandas_schema.validation import (InListValidation,
-                                      DateFormatValidation)
+                                      DateFormatValidation,
+                                      CustomElementValidation)
 
 
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
@@ -39,7 +41,8 @@ def get_key(store, key):
 schema = Schema([
     Column('ID', []),
     Column('Title', []),
-    Column('Authors', []),
+    Column('Authors', [CustomElementValidation(lambda x:
+                        x.split("; "), "Invalid separation of Authors")]),
     Column('Publication Venue', []),
     Column('Publication Date', [DateFormatValidation("%Y-%m-%d")]),
     Column('Abstract', []),
@@ -79,34 +82,37 @@ def process_comments(row):
 
 class GSheetsClient(object):
 
-    def __init__(self):
+    def __init__(self, redis_store, loglevel="INFO"):
         # If modifying these scopes, delete the file token.pickle.
         self.SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly',
                        'https://www.googleapis.com/auth/drive.metadata.readonly']
+        self.redis_store = redis_store
         self.register_services()
         self.last_updated = {}
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(os.environ["GSHEETS_LOGLEVEL"])
+        self.logger.setLevel(loglevel)
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(formatter)
-        handler.setLevel(os.environ["GSHEETS_LOGLEVEL"])
+        handler.setLevel(loglevel)
         self.logger.addHandler(handler)
         self.get_startPageToken()
 
     def authenticate(self):
         creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
+        tokenpath = os.path.join(pathlib.Path(__file__).parent.parent, "token.pickle")
+        credentialspath = os.path.join(pathlib.Path(__file__).parent.parent, "credentials.json")
+        if os.path.exists(tokenpath):
+            with open(tokenpath, 'rb') as token:
                 creds = pickle.load(token)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', self.SCOPES)
+                    credentialspath, self.SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open('token.pickle', 'wb') as token:
+            with open(tokenpath, 'wb') as token:
                 pickle.dump(creds, token)
         return creds
 
@@ -152,7 +158,7 @@ class GSheetsClient(object):
             return False
 
     def next_item(self):
-        queue, msg = redis_store.blpop("gsheets")
+        queue, msg = self.redis_store.blpop("gsheets")
         msg = json.loads(msg)
         k = msg.get('id')
         params = msg.get('params')
@@ -259,8 +265,8 @@ class GSheetsClient(object):
             map_input["id"] = map_k
             map_input["input_data"] = input_data
             map_input["params"] = params
-            redis_store.rpush("input_data", json.dumps(map_input))
-            result = get_key(redis_store, map_k)
+            self.redis_store.rpush("input_data", json.dumps(map_input))
+            result = get_key(self.redis_store, map_k)
             result_df = self.post_process(clean_df, pd.DataFrame.from_records(json.loads(result)))
             res = {}
             res["data"] = result_df.to_json(orient="records")
@@ -279,16 +285,7 @@ class GSheetsClient(object):
             self.logger.debug(params)
             try:
                 res = self.update(params)
-                redis_store.set(k+"_output", json.dumps(res))
+                self.redis_store.set(k+"_output", json.dumps(res))
             except Exception as e:
                 self.logger.error(e)
                 self.logger.error(params)
-
-
-if __name__ == '__main__':
-    with open("redis_config.json") as infile:
-        redis_config = json.load(infile)
-
-    redis_store = redis.StrictRedis(**redis_config)
-    gc = GSheetsClient()
-    gc.run()
