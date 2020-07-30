@@ -42,7 +42,7 @@ schema = Schema([
     Column('ID', []),
     Column('Title', []),
     Column('Authors', [CustomElementValidation(lambda x:
-                        all([", " in a for a in  x.split("; ")]), "Invalid separation of Authors")]),
+                        all([", " in a for a in  x.split("; ")]), "(Invalid separation of authors)")]),
     Column('Publication Venue', []),
     Column('Publication Date', [DateFormatValidation("%Y-%m-%d")]),
     Column('Abstract', []),
