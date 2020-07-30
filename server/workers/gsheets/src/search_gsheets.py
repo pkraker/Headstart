@@ -127,13 +127,14 @@ class GSheetsClient(object):
         self.startPageToken = res.get('startPageToken')
 
     def get_currentPageToken(self, sheet_id):
-        pageToken = self.last_updated[sheet_id] if sheet_id in self.last_updated else self.startPageToken
+        pageToken = self.last_updated.get(sheet_id).get("pageToken") if sheet_id in self.last_updated else self.startPageToken
         return pageToken if pageToken is not None else self.startPageToken
 
     def get_changes(self, pageToken):
         res = self.drive_service.changes().list(pageToken=pageToken,
                                                 spaces='drive').execute()
         return res
+
 
     def update_required(self, sheet_id):
         self.logger.debug(self.last_updated)
@@ -149,9 +150,12 @@ class GSheetsClient(object):
             if len(filtered_changes) != 0:
                 self.logger.debug(filtered_changes)
                 last_change = filtered_changes[-1]
-                self.last_updated[sheet_id] = res.get('newStartPageToken')
+                self.last_updated[sheet_id]["pageToken"] = res.get('newStartPageToken')
                 self.logger.debug(self.last_updated)
-                return last_change.get('time')
+                d = parse(last_change.get('time'))
+                last_update_timestamp_utc = d.strftime("%Y-%m-%d %H:%M:%S %Z")
+                self.last_updated[sheet_id]["timestamp_utc"] = last_update_timestamp_utc
+                return True
             else:
                 return False
         else:
@@ -252,30 +256,42 @@ class GSheetsClient(object):
         input_data["text"] = text.to_json(orient='records')
         return input_data
 
+    def get_new_mapdata(self, sheet_id, sheet_range, params):
+        raw = self.get_sheet_content(sheet_id, sheet_range)
+        clean_df, errors, errors_df = self.validate_data(raw)
+        input_data = self.create_input_data(clean_df)
+        map_k = str(uuid.uuid4())
+        map_input = {}
+        map_input["id"] = map_k
+        map_input["input_data"] = input_data
+        map_input["params"] = params
+        self.redis_store.rpush("input_data", json.dumps(map_input))
+        result = get_key(self.redis_store, map_k)
+        result_df = self.post_process(clean_df, pd.DataFrame.from_records(json.loads(result)))
+        res = {}
+        res["data"] = result_df.to_json(orient="records")
+        res["errors"] = errors_df.to_dict(orient="records")
+        res["sheet_id"] = sheet_id
+        res["last_update"] = self.last_updated[sheet_id]["timestamp_utc"]
+        return res
+
     def update(self, params):
+        res = {"status": "No update required"}
         sheet_id = params.get('sheet_id')
         sheet_range = params.get('sheet_range')
-        last_update = self.update_required(sheet_id)
-        if last_update is not False:
-            raw = self.get_sheet_content(sheet_id, sheet_range)
-            clean_df, errors, errors_df = self.validate_data(raw)
-            input_data = self.create_input_data(clean_df)
-            map_k = str(uuid.uuid4())
-            map_input = {}
-            map_input["id"] = map_k
-            map_input["input_data"] = input_data
-            map_input["params"] = params
-            self.redis_store.rpush("input_data", json.dumps(map_input))
-            result = get_key(self.redis_store, map_k)
-            result_df = self.post_process(clean_df, pd.DataFrame.from_records(json.loads(result)))
-            res = {}
-            res["data"] = result_df.to_json(orient="records")
-            res["errors"] = errors_df.to_dict(orient="records")
-            res["sheet_id"] = sheet_id
-            d = parse(last_update)
-            res["last_update"] = d.strftime("%Y-%m-%d %H:%M:%S %Z")
-        else:
-            res = {"status": "No update required"}
+        last_known_update = params.get('last_update')
+        if not sheet_id in self.last_updated:
+            self.last_updated[sheet_id] = {}
+            last_change = self.files.get(fileId=sheet_id, fields='modifiedTime').execute()
+            d = parse(last_change.get('modifiedTime'))
+            last_update_timestamp_utc = d.strftime("%Y-%m-%d %H:%M:%S %Z")
+            self.last_updated[sheet_id]["timestamp_utc"] = last_update_timestamp_utc
+        update_required = self.update_required(sheet_id)
+        if (last_known_update is not None and
+            last_known_update != self.last_updated[sheet_id]["timestamp_utc"]):
+            res = self.get_new_mapdata(sheet_id, sheet_range, params)
+        if update_required is True:
+            res = self.get_new_mapdata(sheet_id, sheet_range, params)
         return res
 
     def run(self):
