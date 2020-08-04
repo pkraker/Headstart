@@ -25,6 +25,7 @@ if(php_sapi_name() == 'cli') {
     // Called from the apache2 webserver upon web request
     $dirty_query = library\CommUtils::getParameter($_GET, "q");
     $sheet_id = library\CommUtils::getParameter($_GET, "sheet_id");
+    $last_update = isset($_GET["gsheet_last_updated"]) ? library\CommUtils::getParameter($_GET, "gsheet_last_updated") : null;
 }
 
 $params = array("q" => $dirty_query, "sheet_id" => $sheet_id, "sheet_range" => "Resources!A1:AG200");

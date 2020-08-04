@@ -136,7 +136,7 @@ class GSheetsClient(object):
         return res
 
 
-    def update_required(self, sheet_id):
+    def sheet_has_changed(self, sheet_id):
         self.logger.debug(self.last_updated)
         pageToken = self.get_currentPageToken(sheet_id)
         self.logger.debug(pageToken)
@@ -282,15 +282,15 @@ class GSheetsClient(object):
         last_known_update = params.get('last_update')
         if not sheet_id in self.last_updated:
             self.last_updated[sheet_id] = {}
-            last_change = self.files.get(fileId=sheet_id, fields='modifiedTime').execute()
-            d = parse(last_change.get('modifiedTime'))
+            last_change = self.files.get(fileId=sheet_id, fields='modifiedTime').execute().get('modifiedTime')
+            d = parse(last_change)
             last_update_timestamp_utc = d.strftime("%Y-%m-%d %H:%M:%S %Z")
             self.last_updated[sheet_id]["timestamp_utc"] = last_update_timestamp_utc
-        update_required = self.update_required(sheet_id)
+        sheet_has_changed = self.sheet_has_changed(sheet_id)
         if (last_known_update is not None and
             last_known_update != self.last_updated[sheet_id]["timestamp_utc"]):
             res = self.get_new_mapdata(sheet_id, sheet_range, params)
-        if update_required is True:
+        if sheet_has_changed is True:
             res = self.get_new_mapdata(sheet_id, sheet_range, params)
         return res
 
