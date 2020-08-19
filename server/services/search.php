@@ -62,12 +62,6 @@ function search($repository, $dirty_query, $post_params, $param_types, $keyword_
                 ?(cleanQuery($dirty_query, $transform_query_tolowercase))
                 :($dirty_query);
     
-    //TODO: Move this to the error section below
-    if($ini_array["spellchecking"]["check_spelling"]) {
-        $spellchecking = new \headstart\preprocessing\spellchecking\QuerySpellchecking($ini_array);    
-        $misspelled_words = $spellchecking->performSpellchecking($query);
-    }
-    
     $persistence = new \headstart\persistence\SQLitePersistence($ini_array["connection"]["sqlite_db"]);
 
     $settings = $ini_array["general"];
@@ -125,6 +119,17 @@ function search($repository, $dirty_query, $post_params, $param_types, $keyword_
     $result = json_decode($output_json, true);
 
     if (isset($result["status"]) && $result["status"] === "error") {
+        if($ini_array["spellchecking"]["check_spelling"]) {
+            $spellchecking = new \headstart\preprocessing\spellchecking\QuerySpellchecking($ini_array);    
+            $spellcheck_results = $spellchecking->performSpellchecking($query);
+            $result["spellcheck_results"] = $spellcheck_results;
+                    
+                    /*array("new_query" => $spellcheck_results["new_query"]
+                                                , "new_query_markup" => $spellcheck_results["new_query_markup"]);*/
+            
+        }
+        
+        
         return json_encode($result);
     }
     if (isset($result["status"]) && $result["status"] === "No update required") {

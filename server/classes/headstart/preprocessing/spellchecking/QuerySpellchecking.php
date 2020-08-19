@@ -75,30 +75,44 @@ class QuerySpellchecking extends Spellchecking {
             );
 
 
-    public function detectLanguage($string) {
-        $ld = new Language;
-        $ld_array = $ld->detect($string)->bestResults()->close();
+    public function detectLanguage($string, $default_lang='en') {
+        try {
+            $ld = new Language;
+            $ld_array = $ld->detect($string)->bestResults()->close();
+            
+            $detected_language = array_keys($ld_array)[0];
         
-        $detected_language = array_keys($ld_array)[0];
-        
-        if((sizeof($ld_array) > 1 && $ld_array[$detected_language] < 0.6) 
-                || !array_key_exists($detected_language, $this->lang_to_code)) {    
-            $detected_language = 'en';
+            if((sizeof($ld_array) > 1 && $ld_array[$detected_language] < 0.55) 
+                    || !array_key_exists($detected_language, $this->lang_to_code)) {    
+                $detected_language = $default_lang;
+            }
+        } catch (\Throwable $e) {
+            error_log('Error detecting query language: ' . $e->getMessage());
+            $detected_language = $default_lang;
+            $ld_array = array("status" => "error");
         }
         
-        return $this->lang_to_code[$detected_language];
+        return array(
+            'detected_language' => $this->lang_to_code[$detected_language]
+                , 'ld_array' => $ld_array
+            );
         
     }
     
     public function checkText($string, $lang) {
-        
+        //TODO: find a better way to this
         putenv("LANG=$lang.UTF-8");
         $_SERVER['LANG'] = "$lang.UTF-8";
-       
-        $source = new StringSource($string);
-        $speller = new Hunspell($this->ini_array["hunspell_path"]);
-        $speller->setDictionaryPath($this->ini_array["dicts_path"]);
-        $issues = $speller->checkText($source, [$lang]);
+        
+        try {
+            $source = new StringSource($string);
+            $speller = new Hunspell($this->ini_array["hunspell_path"]);
+            $speller->setDictionaryPath($this->ini_array["dicts_path"]);
+            $issues = $speller->checkText($source, [$lang]);
+        } catch (\Throwable $e) {
+            error_log('Error during spellcheck: ' . $e->getMessage());
+            $issues = array("status"=>"error");
+        }
 
         return $issues;
         
@@ -145,16 +159,26 @@ class QuerySpellchecking extends Spellchecking {
 
     public function performSpellchecking($string
             , $suggestion_prefix = '<span class="corrected-word">'
-            , $suggestion_postfix = '</span>' ) {
+            , $suggestion_postfix = '</span>') {
         
-        $lang = $this->detectLanguage($string);
+        $ld = $this->detectLanguage($string);
+        $lang = $ld['detected_language'];
         $spelling_errors = $this->checkText($string, $lang);
         
-        $new_string = $this->replaceWithSuggestion($string, $spelling_errors);
-        $new_string_display = $this->replaceWithSuggestion($string, $spelling_errors
-                , $suggestion_prefix, $suggestion_postfix);
+        $new_string = "";
+        $new_string_display = "";
         
-        return array($new_string, $new_string_display);
+        if (!isset($spelling_errors["status"]) || $spelling_errors["status"] !== "error") {
+            $new_string = $this->replaceWithSuggestion($string, $spelling_errors);
+            $new_string_display = $this->replaceWithSuggestion($string, $spelling_errors
+                    , $suggestion_prefix, $suggestion_postfix);
+        }
+        
+        return array(
+            'new_query' => $new_string
+                , 'new_query_markup' => $new_string_display
+                , 'language_detection' => $ld
+                , 'spellcheck' => $spelling_errors);
         
     }
 
