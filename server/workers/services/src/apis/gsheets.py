@@ -50,6 +50,10 @@ class Search(Resource):
         gsheets_ns.logger.debug(d)
         redis_store.rpush("gsheets", json.dumps(d))
         result = get_key(redis_store, k)
+        if result.get('status') == "error":
+            return make_response(result,
+                                 500,
+                                 {"Content-Type": "application/json"})
         try:
             headers = {}
             headers["Content-Type"] = "application/json"

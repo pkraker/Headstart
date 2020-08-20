@@ -300,5 +300,10 @@ class GSheetsClient(object):
                 res = self.update(params)
                 self.redis_store.set(k+"_output", json.dumps(res))
             except Exception as e:
+                res = {}
+                res["id"] = k
+                res["status"] = "error"
+                res["reason"] = str(e)
+                self.redis_store.set(k+"_output", json.dumps(res))
                 self.logger.error(e)
                 self.logger.error(params)

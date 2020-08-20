@@ -6,6 +6,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Q
 import pandas as pd
 import logging
+from dateutil.parser import parse
 
 import spacy
 from spacy_cld import LanguageDetector
@@ -18,6 +19,21 @@ valid_langs = {
     'fr': 'French',
     'es': 'Spanish'
 }
+
+def detect_error(params):
+    reason = []
+    if len(params.get('q').split(" ")) < 4:
+        reason.extend(["typo", "too specific"])
+    else:
+        reason.extend(["query length", "too specific"])
+    from_ = params.get('from')
+    to_ = params.get('to')
+    if (from_ is not None and to_ is not None):
+        timedelta = parse(to_) - parse(from_)
+        if timedelta.days <= 60:
+            reason.append("timeframe too short")
+    return {"status": "error",
+            "reason": reason}
 
 
 class TripleClient(object):
@@ -246,12 +262,22 @@ class TripleClient(object):
                 try:
                     res = {}
                     res["id"] = k
-                    res["input_data"] = self.search(params)
+                    input_data = self.search(params)
+                    res["input_data"] = input_data
                     res["params"] = params
                     if params.get('raw') is True:
                         self.redis_store.set(k+"_output", json.dumps(res))
                     else:
                         self.redis_store.rpush("input_data", json.dumps(res))
+                except AttributeError:
+                    res = detect_error(params)
+                    res["id"] = k
+                    self.redis_store.set(k+"_output", json.dumps(res))
                 except Exception as e:
+                    res = {}
+                    res["id"] = k
+                    res["status"] = "error"
+                    res["reason"] = str(e)
+                    self.redis_store.set(k+"_output", json.dumps(res))
                     self.logger.error(e)
                     self.logger.error(params)

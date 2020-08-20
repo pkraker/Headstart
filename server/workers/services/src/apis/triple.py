@@ -71,6 +71,10 @@ class Search(Resource):
         triple_ns.logger.debug(d)
         redis_store.rpush("triple", json.dumps(d))
         result = get_key(redis_store, k)
+        if result.get('status') == "error":
+            return make_response(result,
+                                 500,
+                                 {"Content-Type": "application/json"})
         try:
             headers = {}
             if request.headers["Accept"] == "application/json":
