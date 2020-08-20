@@ -92,15 +92,21 @@ class QuerySpellchecking extends Spellchecking {
         $additional_offset = 0;
         
         foreach($spelling_errors as $error) {
-            $suggestion = $error->suggestions[0];
-            
-            $new_string = substr_replace($new_string
-                    ,  $suggestion_prefix . $suggestion . $suggestion_postfix
-                    , intval($error->offset) + $additional_offset
-                    , strlen($error->word));
-            
-            $additional_offset += strlen($suggestion_prefix) + strlen($suggestion_postfix)
-                                    + strlen($suggestion) - strlen($error->word);
+            if(isset($error->suggestions[0])) {
+                $suggestion = strtolower($error->suggestions[0]);
+                $offset = intval($error->offset) + $additional_offset;
+                $strlen = strlen($error->word);
+                
+                if($suggestion !== substr($new_string, $offset, $strlen)) {
+                    $new_string = substr_replace($new_string
+                            , $suggestion_prefix . $suggestion . $suggestion_postfix
+                            , $offset
+                            , $strlen);
+
+                    $additional_offset += strlen($suggestion_prefix) + strlen($suggestion_postfix)
+                                            + strlen($suggestion) - strlen($error->word);
+                }
+            }
         }
         
         return $new_string;
