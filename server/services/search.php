@@ -123,10 +123,6 @@ function search($repository, $dirty_query, $post_params, $param_types, $keyword_
             $spellchecking = new \headstart\preprocessing\spellchecking\QuerySpellchecking($ini_array);    
             $spellcheck_results = $spellchecking->performSpellchecking($query);
             $result["spellcheck_results"] = $spellcheck_results;
-                    
-                    /*array("new_query" => $spellcheck_results["new_query"]
-                                                , "new_query_markup" => $spellcheck_results["new_query_markup"]);*/
-            
         }
         
         

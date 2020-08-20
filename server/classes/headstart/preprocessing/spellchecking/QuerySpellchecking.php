@@ -106,7 +106,7 @@ class QuerySpellchecking extends Spellchecking {
         return $new_string;
     }
 
-    public function performSpellchecking($string
+    public function performSpellchecking($string, $verbose = false
             , $suggestion_prefix = '<span class="corrected-word">'
             , $suggestion_postfix = '</span>') {
         
@@ -123,11 +123,16 @@ class QuerySpellchecking extends Spellchecking {
                     , $suggestion_prefix, $suggestion_postfix);
         }
         
-        return array(
+        $ret_array = array(
             'new_query' => $new_string
-                , 'new_query_markup' => $new_string_display
-                , 'language_detection' => $ld
-                , 'spellcheck' => $spelling_errors);
+                , 'new_query_markup' => $new_string_display);
+        
+        if($verbose === true) {
+            $ret_array["language_detection"] = $ld;
+            $ret_array["spellcheck"] = $spelling_errors;
+        }
+        
+        return $ret_array;
         
     }
 
