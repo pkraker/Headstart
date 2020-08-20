@@ -119,7 +119,7 @@ function search($repository, $dirty_query, $post_params, $param_types, $keyword_
     $result = json_decode($output_json, true);
 
     if (isset($result["status"]) && $result["status"] === "error") {
-        if($ini_array["spellchecking"]["check_spelling"]) {
+        if(isset($ini_array["spellchecking"]) && $ini_array["spellchecking"]["check_spelling"]) {
             $spellchecking = new \headstart\preprocessing\spellchecking\QuerySpellchecking($ini_array);    
             $spellcheck_results = $spellchecking->performSpellchecking($query);
             $result["spellcheck_results"] = $spellcheck_results;
