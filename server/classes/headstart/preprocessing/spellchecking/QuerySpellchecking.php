@@ -8,8 +8,7 @@ namespace headstart\preprocessing\spellchecking;
  * @author pkraker
  */
 require_once 'Spellchecking.php';
-// TODO: Make that path configurable
-require __DIR__ . '../../../../../../../../vendor/autoload.php';
+@include __DIR__ . '../../../../vendor/autoload.php';
 
 use LanguageDetection\Language;
 use Mekras\Speller\Hunspell\Hunspell;
@@ -17,62 +16,12 @@ use Mekras\Speller\Source\StringSource;
 
 class QuerySpellchecking extends Spellchecking {
     
-    protected $lang_to_code =
-            array(
-               "af" => "af_ZA"
-                , "ar" => "ar"
-                , "an" => "an_ES"
-                , "be" => "be_BY"
-                , "bn" => "bn_BD"
-                , "bo" => "bo"
-                , "br" => "br_FR"
-                , "bs" => "bs_BA"
-                , "ca" => "ca"
-                , "cs" => "cs_CZ"
-                , "da" => "da_DK"
-                , "de" => "de_DE"
-                , "el" => "el_GR"
-                , "en" => "en_US"
-                , "es" => "es_ANY"
-                , "et" => "et_EE"
-                , "fr" => "fr"
-                , "gd" => "gd_GB"
-                , "gl" => "gl_ES"
-                , "gu" => "gu_IN"
-                , "gug" => "gug"
-                , "he" => "he_IL"
-                , "hi" => "hi_IN"
-                , "hr" => "hr_HR"
-                , "hu" => "hu_HU"
-                , "id" => "id_ID"
-                , "is" => "is"
-                , "it" => "it_IT"
-                , "kmr" => "kmr_Lattn"
-                , "lo" => "lo_LA"
-                , "lt" => "lt"
-                , "lv" => "lv_LV"
-                , "nb" => "nb_NO"
-                , "ne" => "ne_NP"
-                , "nl" => "nl_NL"
-                , "nn" => "nn_NO"
-                , "oc" => "oc_FR"
-                , "pl" => "pl_PL"
-                , "pt" => "pt_BR"
-                , "ro" => "ro_RO"
-                , "ru" => "ru_RU"
-                , "si" => "si_LK"
-                , "sk" => "sk_SK"
-                , "sl" => "sl_SI"
-                , "sq" => "sq_AL"
-                , "sr" => "sr"
-                , "sv" => "sv_SE"
-                , "sw" => "sw_TZ"
-                , "te" => "te_IN"
-                , "th" => "th_TH"
-                , "tr" => "tr_TR"
-                , "uk" => "uk_UA"
-                , "vi" => "vi_VN"
-            );
+    protected $lang_to_code;
+    
+    function __construct($ini_array) {
+        parent::__construct($ini_array);
+        $this->lang_to_code = $this->ini_array["lang_to_code"];
+    }
 
 
     public function detectLanguage($string, $default_lang='en') {
@@ -108,7 +57,7 @@ class QuerySpellchecking extends Spellchecking {
             $source = new StringSource($string);
             $speller = new Hunspell($this->ini_array["hunspell_path"]);
             $speller->setDictionaryPath($this->ini_array["dicts_path"]);
-            $issues = $speller->checkText($source, [$lang]);
+            $issues = $speller->checkText($source, [$lang, 'de']);
         } catch (\Throwable $e) {
             error_log('Error during spellcheck: ' . $e->getMessage());
             $issues = array("status"=>"error");
