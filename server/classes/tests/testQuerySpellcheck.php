@@ -31,13 +31,15 @@ if (($input_handle = fopen("test_queries.csv", "r")) !== FALSE) {
         
         $language_match = ($expected_language !== "")?($expected_language === $detected_language):("");
         $query_match = ($expected_query !== "")?($expected_query === $corrected_query):("");
+        
+        echo $corrected_query . "\n\n";
     
         fputcsv($output_handle, array(
                     $data[0]
                     , $corrected_query
                     , $expected_query
                     , $query_match ? 'true' : 'false'
-                    , json_encode($results["spellcheck"])
+                    , (isset($results["spellcheck"])?(json_encode($results["spellcheck"])):(json_encode(array())))
                     , $detected_language
                     , $expected_language
                     , $language_match ? 'true' : 'false'

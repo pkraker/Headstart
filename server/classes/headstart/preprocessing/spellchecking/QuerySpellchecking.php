@@ -22,17 +22,55 @@ class QuerySpellchecking extends Spellchecking {
         parent::__construct($ini_array);
         $this->lang_to_code = $this->ini_array["lang_to_code"];
     }
+    
+    private function mb_substr_replace($string, $replacement, $start, $length=NULL) {
+        if (is_array($string)) {
+            $num = count($string);
+            // $replacement
+            $replacement = is_array($replacement) ? array_slice($replacement, 0, $num) : array_pad(array($replacement), $num, $replacement);
+            // $start
+            if (is_array($start)) {
+                $start = array_slice($start, 0, $num);
+                foreach ($start as $key => $value)
+                    $start[$key] = is_int($value) ? $value : 0;
+            }
+            else {
+                $start = array_pad(array($start), $num, $start);
+            }
+            // $length
+            if (!isset($length)) {
+                $length = array_fill(0, $num, 0);
+            }
+            elseif (is_array($length)) {
+                $length = array_slice($length, 0, $num);
+                foreach ($length as $key => $value)
+                    $length[$key] = isset($value) ? (is_int($value) ? $value : $num) : 0;
+            }
+            else {
+                $length = array_pad(array($length), $num, $length);
+            }
+            // Recursive call
+            return array_map(__FUNCTION__, $string, $replacement, $start, $length);
+        }
+        preg_match_all('/./us', (string)$string, $smatches);
+        preg_match_all('/./us', (string)$replacement, $rmatches);
+        if ($length === NULL) $length = mb_strlen($string);
+        array_splice($smatches[0], $start, $length, $rmatches[0]);
+        return join($smatches[0]);
+    }
 
 
-    public function detectLanguage($string, $default_lang='en') {
+    public function detectLanguage($string, $default_lang=null) {
         try {
             $ld = new Language;
             $ld_array = $ld->detect($string)->bestResults()->close();
             
-            $detected_language = array_keys($ld_array)[0];
+            $detected_language_long = array_keys($ld_array)[0];
+            $detected_language = mb_substr($detected_language_long, 0, 2);
         
-            if((sizeof($ld_array) > 1 && $ld_array[$detected_language] < 0.55) 
-                    || !array_key_exists($detected_language, $this->lang_to_code)) {    
+            if((!array_key_exists($detected_language, $this->lang_to_code)) 
+                    || sizeof($ld_array) > 1 && $ld_array[$detected_language_long] < 0.55
+                    || sizeof($ld_array) > 3) {    
                 $detected_language = $default_lang;
             }
         } catch (\Throwable $e) {
@@ -42,7 +80,7 @@ class QuerySpellchecking extends Spellchecking {
         }
         
         return array(
-            'detected_language' => $this->lang_to_code[$detected_language]
+            'detected_language' => $detected_language === null ? null : $this->lang_to_code[$detected_language]
                 , 'ld_array' => $ld_array
             );
         
@@ -93,12 +131,12 @@ class QuerySpellchecking extends Spellchecking {
         
         foreach($spelling_errors as $error) {
             if(isset($error->suggestions[0])) {
-                $suggestion = strtolower($error->suggestions[0]);
+                $suggestion = mb_strtolower($error->suggestions[0]);
                 $offset = intval($error->offset) + $additional_offset;
-                $strlen = strlen($error->word);
+                $strlen = mb_strlen($error->word);
                 
-                if($suggestion !== substr($new_string, $offset, $strlen)) {
-                    $new_string = substr_replace($new_string
+                if($suggestion !== mb_substr($new_string, $offset, $strlen)) {
+                    $new_string = $this->mb_substr_replace($new_string
                             , $suggestion_prefix . $suggestion . $suggestion_postfix
                             , $offset
                             , $strlen);
@@ -116,17 +154,19 @@ class QuerySpellchecking extends Spellchecking {
             , $suggestion_prefix = '<span class="corrected-word">'
             , $suggestion_postfix = '</span>') {
         
-        $ld = $this->detectLanguage($string);
-        $lang = $ld['detected_language'];
-        $spelling_errors = $this->checkText($string, $lang);
-        
         $new_string = "";
         $new_string_display = "";
         
-        if (!isset($spelling_errors["status"]) || $spelling_errors["status"] !== "error") {
-            $new_string = $this->replaceWithSuggestion($string, $spelling_errors);
-            $new_string_display = $this->replaceWithSuggestion($string, $spelling_errors
-                    , $suggestion_prefix, $suggestion_postfix);
+        $ld = $this->detectLanguage($string);
+        $lang = $ld['detected_language'];
+        if($lang !== null) {
+            $spelling_errors = $this->checkText($string, $lang);
+
+            if (!isset($spelling_errors["status"]) || $spelling_errors["status"] !== "error") {
+                $new_string = $this->replaceWithSuggestion($string, $spelling_errors);
+                $new_string_display = $this->replaceWithSuggestion($string, $spelling_errors
+                        , $suggestion_prefix, $suggestion_postfix);
+            }
         }
         
         $ret_array = array(
@@ -135,7 +175,9 @@ class QuerySpellchecking extends Spellchecking {
         
         if($verbose === true) {
             $ret_array["language_detection"] = $ld;
-            $ret_array["spellcheck"] = $spelling_errors;
+            if($lang !== null) {
+                $ret_array["spellcheck"] = $spelling_errors;
+            }
         }
         
         return $ret_array;
