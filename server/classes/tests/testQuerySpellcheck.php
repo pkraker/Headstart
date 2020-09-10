@@ -27,7 +27,8 @@ if (($input_handle = fopen("test_queries.csv", "r")) !== FALSE) {
         
         $results = $spellchecking->performSpellchecking($data[0], true);
         $corrected_query = $results["new_query"];
-        $detected_language = array_keys($results["language_detection"]["ld_array"])[0];
+        $detected_language_raw = $results["language_detection"]["detected_language"];
+        $detected_language = $detected_language_raw === null ? "none" : $detected_language_raw;
         
         $language_match = ($expected_language !== "")?($expected_language === $detected_language):("");
         $query_match = ($expected_query !== "")?($expected_query === $corrected_query):("");

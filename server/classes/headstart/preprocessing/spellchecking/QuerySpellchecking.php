@@ -31,8 +31,9 @@ class QuerySpellchecking extends Spellchecking {
             // $start
             if (is_array($start)) {
                 $start = array_slice($start, 0, $num);
-                foreach ($start as $key => $value)
+                foreach ($start as $key => $value) {
                     $start[$key] = is_int($value) ? $value : 0;
+                }
             }
             else {
                 $start = array_pad(array($start), $num, $start);
@@ -43,8 +44,9 @@ class QuerySpellchecking extends Spellchecking {
             }
             elseif (is_array($length)) {
                 $length = array_slice($length, 0, $num);
-                foreach ($length as $key => $value)
+                foreach ($length as $key => $value) {
                     $length[$key] = isset($value) ? (is_int($value) ? $value : $num) : 0;
+                }
             }
             else {
                 $length = array_pad(array($length), $num, $length);
@@ -69,18 +71,19 @@ class QuerySpellchecking extends Spellchecking {
             $detected_language = mb_substr($detected_language_long, 0, 2);
         
             if((!array_key_exists($detected_language, $this->lang_to_code)) 
-                    || sizeof($ld_array) > 1 && $ld_array[$detected_language_long] < 0.55
+                    // TODO: check if we need this threshold
+                    //|| sizeof($ld_array) > 1 && $ld_array[$detected_language_long] < 0.55
                     || sizeof($ld_array) > 3) {    
-                $detected_language = $default_lang;
+                $detected_language = null;
             }
         } catch (\Throwable $e) {
             error_log('Error detecting query language: ' . $e->getMessage());
-            $detected_language = $default_lang;
+            $detected_language = null;
             $ld_array = array("status" => "error");
         }
         
         return array(
-            'detected_language' => $detected_language === null ? null : $this->lang_to_code[$detected_language]
+            'detected_language' => $detected_language === null ? null : $detected_language
                 , 'ld_array' => $ld_array
             );
         
@@ -160,7 +163,7 @@ class QuerySpellchecking extends Spellchecking {
         $ld = $this->detectLanguage($string);
         $lang = $ld['detected_language'];
         if($lang !== null) {
-            $spelling_errors = $this->checkText($string, $lang);
+            $spelling_errors = $this->checkText($string, $this->lang_to_code[$lang]);
 
             if (!isset($spelling_errors["status"]) || $spelling_errors["status"] !== "error") {
                 $new_string = $this->replaceWithSuggestion($string, $spelling_errors);
