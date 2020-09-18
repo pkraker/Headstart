@@ -28,7 +28,7 @@ if (($input_handle = fopen("test_queries.csv", "r")) !== FALSE) {
         $results = $spellchecking->performSpellchecking($data[0], true);
         $corrected_query = $results["new_query"];
         $detected_language_raw = $results["language_detection"]["detected_language"];
-        $detected_language = $detected_language_raw === null ? "none" : $detected_language_raw;
+        $detected_language = $detected_language_raw === null ? "" : $detected_language_raw;
         
         $language_match = ($expected_language !== "")?($expected_language === $detected_language):("");
         $query_match = ($expected_query !== "")?($expected_query === $corrected_query):("");
@@ -43,7 +43,7 @@ if (($input_handle = fopen("test_queries.csv", "r")) !== FALSE) {
                     , (isset($results["spellcheck"])?(json_encode($results["spellcheck"])):(json_encode(array())))
                     , $detected_language
                     , $expected_language
-                    , $language_match ? 'true' : 'false'
+                    , "$language_match"
                     , json_encode($results["language_detection"]["ld_array"])
                 ));
     }
