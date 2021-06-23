@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 from marshmallow import Schema, fields, pre_load, validates, ValidationError
 
 
@@ -50,3 +51,24 @@ class SearchParamSchema(Schema):
     def limit_is_int(self, limit):
         if not isinstance(limit, int):
             raise ValidationError("Limit must be an integer.")
+
+
+class TripleParamsSchema(SearchParamSchema):
+    from_ = fields.Date(data_key="from",
+                    format="%Y-%m-%d")
+
+    class Meta:
+        dateformat = "%Y-%m-%d"
+    
+    @pre_load
+    def fix_years(self, in_data, **kwargs):
+        try:
+            if math.isnan(float(in_data.get('from'))):
+                in_data["from"] = "1800"
+        except Exception:
+            pass
+        if len(in_data.get('from')) == 4:
+            in_data["from"] = in_data["from"]+"-01-01"
+        if len(in_data.get('to')) == 4:
+            in_data["to"] = in_data["to"]+"-12-31"
+        return in_data

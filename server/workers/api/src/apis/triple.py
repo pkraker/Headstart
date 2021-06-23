@@ -9,7 +9,7 @@ import pandas as pd
 
 from flask import Blueprint, request, make_response, jsonify, abort
 from flask_restx import Namespace, Resource, fields
-from .request_validators import SearchParamSchema
+from .request_validators import TripleParamsSchema
 from apis.utils import get_key, detect_error
 
 
@@ -24,7 +24,7 @@ redis_store = redis.StrictRedis(**redis_config)
 triple_ns = Namespace("triple", description="TRIPLE API operations")
 
 
-search_param_schema = SearchParamSchema()
+search_param_schema = TripleParamsSchema()
 
 
 search_query = triple_ns.model("SearchQuery",
@@ -72,6 +72,8 @@ class Search(Resource):
         triple_ns.logger.debug(errors)
         if errors:
             abort(400, str(errors))
+        temp = search_param_schema.load(params)
+        params = search_param_schema.dump(temp)
         k = str(uuid.uuid4())
         d = {"id": k, "params": params,
              "endpoint": "search"}
