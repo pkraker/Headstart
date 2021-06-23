@@ -68,12 +68,12 @@ class Search(Resource):
         params = request.get_json()
         triple_ns.logger.debug(params)
         errors = search_param_schema.validate(params, partial=True)
+        temp = search_param_schema.load(params, partial=True)
+        params = search_param_schema.dump(temp)
         params["list_size"] = params.get('limit', 100)
         triple_ns.logger.debug(errors)
         if errors:
             abort(400, str(errors))
-        temp = search_param_schema.load(params, partial=True)
-        params = search_param_schema.dump(temp)
         k = str(uuid.uuid4())
         d = {"id": k, "params": params,
              "endpoint": "search"}
