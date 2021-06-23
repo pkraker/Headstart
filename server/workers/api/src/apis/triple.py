@@ -72,7 +72,7 @@ class Search(Resource):
         triple_ns.logger.debug(errors)
         if errors:
             abort(400, str(errors))
-        temp = search_param_schema.load(params)
+        temp = search_param_schema.load(params, partial=True)
         params = search_param_schema.dump(temp)
         k = str(uuid.uuid4())
         d = {"id": k, "params": params,
